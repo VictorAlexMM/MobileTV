@@ -236,6 +236,29 @@
     7. Raiz do aplicativo: requer toque duplo no botão voltar dentro de 2 segundos com Toast de aviso ("Pressione voltar novamente para sair") antes de finalizar a Activity.
 - **Consequências**: Experiência de usuário fluida e natural no Android, prevenção total contra fechamentos acidentais do app e acesso rápido e consistente aos itens favoritos em qualquer seção.
 
+---
+
+### ADR-018: Resolução do Fluxo de Downloads Congelados em 0%, Polling Ativo de Progresso e Botão Animado Estilo Netflix
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Ao colocar séries ou episódios para baixar, o indicador de progresso permanecia indefinidamente em 0%. Além disso, o botão de download era estático e sem feedback visual atrativo, carecendo da micro-animação fluida característica do aplicativo Netflix no momento em que o download é acionado e progride.
+- **Decisão**:
+  - **Diagnóstico e Correção da Causa Raiz do 0%**:
+    1. **Serviço em Foreground (Android 12+)**: `DownloadService.sendAddDownload` utilizava `foreground = false`. No Android 12+, serviços em background sem canal foreground sofrem restrições severas de execução, fazendo com que o OS congele as threads de download. Alterado para `foreground = true`.
+    2. **Ausência de Emissão de Bytes pelo Listener**: A arquitetura do Media3 `DownloadManager.Listener.onDownloadChanged` foi concebida exclusivamente para disparar em **mudanças de estado** (ex: transição para `STATE_DOWNLOADING`), instante no qual os bytes transferidos ainda são zero. Ele intencionalmente **não** dispara eventos contínuos conforme os pacotes de dados chegam. Implementou-se um mecanismo de polling ativo via Coroutine (`startProgressPolling`) no `DownloadController` que consulta `downloadManager.currentDownloads` a cada 500ms, calcula a porcentagem exata (`bytesDownloaded / contentLength * 100f` ou `download.percentDownloaded`) e persiste em tempo real no Room via `downloadDao.updateProgress`.
+    3. **Bypass de 403 Forbidden e Redirecionamentos em Servidores IPTV**: Configurado interceptor com `User-Agent: IPTVSmartPlayer/1.0 (Linux; Android) ExoPlayerLib/Media3` e habilitado `followRedirects(true)` e `followSslRedirects(true)` tanto no `NetworkClient` quanto no `DownloadModule.getHttpDataSourceFactory`.
+    4. **Mapeamento Exato de MIME Types**: Inserida resolução explícita de `MimeTypes.VIDEO_MP4`, `VIDEO_MATROSKA`, `VIDEO_MP2T`, `APPLICATION_M3U8` e `APPLICATION_MPD` com base na extensão da URL no `DownloadRequest.Builder`.
+    5. **Relaxamento de Requisitos Restritivos**: Empregado `Requirements(Requirements.NETWORK)` e acionamento garantido de `downloadManager.resumeDownloads()`.
+  - **Componente Visual Netflix (`NetflixDownloadButton`)**:
+    - Criado componente Jetpack Compose com suporte a micro-animações estilo Netflix:
+      - **Estado QUEUED**: Início de download com arco contínuo girando em 360° em loop e seta deslizando suavemente para dentro da bandeja.
+      - **Estado DOWNLOADING**: Anel circular de progresso em tempo real preenchendo a circunferência com ícone central quadrado de parada/pausa (estilo Netflix) e indicação visual precisa.
+      - **Estado COMPLETED**: Transição com pop spring bouncy e checkmark circular verde esmeralda.
+      - **Estado PAUSED / FAILED**: Estados visuais interativos permitindo retomar ou reiniciar o download com clique.
+    - Totalmente integrado na lista de episódios em `SeriesDetailScreen.kt` e nos cards de filmes em `ChannelCard.kt`.
+- **Consequências**: Downloads de séries e episódios agora fluem continuamente com barra e percentual em tempo real, suporte total a background downloading no Android 12+ sem interrupção do sistema, e feedback estético idêntico à Netflix ao toque do usuário.
+
+
 
 
 

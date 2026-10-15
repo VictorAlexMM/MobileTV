@@ -197,15 +197,14 @@ fun ChannelCard(
                             modifier = Modifier.size(22.dp)
                         )
                     }
-                } else if (channel.contentType == ContentType.MOVIE && onDownloadClick != null && !isDownloaded) {
-                    IconButton(onClick = onDownloadClick) {
-                        Icon(
-                            imageVector = Icons.Default.Download,
-                            contentDescription = "Baixar",
-                            tint = PrimaryIndigo,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+                } else if (channel.contentType == ContentType.MOVIE && onDownloadClick != null) {
+                    NetflixDownloadButton(
+                        status = downloadStatus,
+                        percent = if (isDownloaded) 100f else 0f,
+                        onClick = onDownloadClick,
+                        size = 32.dp,
+                        iconSize = 18.dp
+                    )
                 }
 
                 IconButton(onClick = onFavoriteToggle) {

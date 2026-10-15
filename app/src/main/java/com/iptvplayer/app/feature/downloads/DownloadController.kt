@@ -18,7 +18,11 @@ import com.iptvplayer.app.core.database.entity.DownloadEntity
 import com.iptvplayer.app.core.database.model.DownloadStatus
 import com.iptvplayer.app.core.datastore.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 @OptIn(UnstableApi::class)
@@ -29,6 +33,7 @@ class DownloadController(
     private val scope: CoroutineScope
 ) {
     private val downloadManager = DownloadModule.getDownloadManager(context)
+    private var progressPollingJob: Job? = null
 
     init {
         // Escuta os eventos do Media3 DownloadManager para manter o Room 100% sincronizado
@@ -42,7 +47,14 @@ class DownloadController(
                     val status = mapMedia3Status(download.state)
                     val bytes = download.bytesDownloaded
                     val total = download.contentLength
-                    val percent = if (download.percentDownloaded != -1f) download.percentDownloaded else 0f
+                    val percent = if (download.state == Download.STATE_COMPLETED) {
+                        100f
+                    } else if (download.percentDownloaded != -1f && download.percentDownloaded > 0f) {
+                        download.percentDownloaded
+                    } else if (total > 0) {
+                        ((bytes.toDouble() / total.toDouble()) * 100.0).toFloat().coerceIn(0f, 100f)
+                    } else 0f
+
                     val errorMsg = finalException?.localizedMessage
 
                     database.downloadDao().updateProgress(
@@ -53,6 +65,10 @@ class DownloadController(
                         status = status,
                         errorMessage = errorMsg
                     )
+
+                    if (download.state == Download.STATE_DOWNLOADING || download.state == Download.STATE_QUEUED) {
+                        startProgressPolling()
+                    }
                 }
             }
 
@@ -62,6 +78,60 @@ class DownloadController(
                 }
             }
         })
+
+        // Retoma downloads e inicia polling de progresso imediatamente se houver downloads em andamento
+        scope.launch(Dispatchers.IO) {
+            try {
+                downloadManager.resumeDownloads()
+                if (downloadManager.currentDownloads.any { it.state == Download.STATE_DOWNLOADING || it.state == Download.STATE_QUEUED }) {
+                    startProgressPolling()
+                }
+            } catch (e: Exception) {
+                // Log de proteção
+            }
+        }
+    }
+
+    /**
+     * Loop ativo em segundo plano que consulta as taxas e percentuais de bytes baixados
+     * diretamente do Media3 DownloadManager, emitindo atualizações contínuas para o Room.
+     */
+    private fun startProgressPolling() {
+        if (progressPollingJob?.isActive == true) return
+        progressPollingJob = scope.launch(Dispatchers.IO) {
+            while (isActive) {
+                delay(500)
+                val currentDownloads = downloadManager.currentDownloads
+                val activeDownloads = currentDownloads.filter {
+                    it.state == Download.STATE_DOWNLOADING || it.state == Download.STATE_QUEUED || it.state == Download.STATE_RESTARTING
+                }
+                if (activeDownloads.isEmpty()) {
+                    break
+                }
+                for (d in activeDownloads) {
+                    val bytes = d.bytesDownloaded
+                    val total = d.contentLength
+                    val percent = if (d.state == Download.STATE_COMPLETED) {
+                        100f
+                    } else if (d.percentDownloaded != -1f && d.percentDownloaded > 0f) {
+                        d.percentDownloaded
+                    } else if (total > 0) {
+                        ((bytes.toDouble() / total.toDouble()) * 100.0).toFloat().coerceIn(0f, 100f)
+                    } else {
+                        0f
+                    }
+
+                    database.downloadDao().updateProgress(
+                        id = d.request.id,
+                        bytesDownloaded = bytes,
+                        totalBytes = total,
+                        percent = percent,
+                        status = mapMedia3Status(d.state),
+                        errorMessage = null
+                    )
+                }
+            }
+        }
     }
 
     suspend fun startDownload(
@@ -87,23 +157,34 @@ class DownloadController(
         )
         database.downloadDao().insertOrUpdate(entity)
 
-        // 3. Montagem da requisição Media3
+        // 3. Montagem da requisição Media3 com MIME Type apropriado
         val uri = Uri.parse(sourceUrl)
         val requestBuilder = DownloadRequest.Builder(contentId, uri)
 
-        if (sourceUrl.contains(".m3u8", ignoreCase = true)) {
-            requestBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+        val mimeType = when {
+            sourceUrl.contains(".m3u8", ignoreCase = true) -> MimeTypes.APPLICATION_M3U8
+            sourceUrl.contains(".mpd", ignoreCase = true) -> MimeTypes.APPLICATION_MPD
+            sourceUrl.contains(".mp4", ignoreCase = true) -> MimeTypes.VIDEO_MP4
+            sourceUrl.contains(".mkv", ignoreCase = true) -> MimeTypes.VIDEO_MATROSKA
+            sourceUrl.contains(".ts", ignoreCase = true) -> MimeTypes.VIDEO_MP2T
+            else -> null
+        }
+        if (mimeType != null) {
+            requestBuilder.setMimeType(mimeType)
         }
 
         val request = requestBuilder.build()
 
-        // 4. Disparo do serviço em primeiro plano
+        // 4. Disparo do serviço em primeiro plano (foreground = true garante execução no Android 12+)
         DownloadService.sendAddDownload(
             context,
             AppDownloadService::class.java,
             request,
-            false
+            true
         )
+
+        // 5. Inicia o monitoramento ativo de progresso
+        startProgressPolling()
     }
 
     /**

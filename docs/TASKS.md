@@ -197,5 +197,23 @@
   - Confirmação de saída com duplo clique e Toast protetivo ("Pressione voltar novamente para sair") na tela raiz.
 - [x] **TASK-1004**: Validação de testes unitários (`testDebugUnitTest`), compilação do APK e deploy direto no Samsung Galaxy S23 Ultra (`SM-S918B`).
 
+---
+
+## Fase 11 — Correção do Download Travado em 0% e Animação de Download Estilo Netflix
+
+- [x] **TASK-1101**: Diagnóstico e resolução do congelamento de downloads em 0%:
+  - Ativação de serviço de primeiro plano estrito (`foreground = true`) em `DownloadService.sendAddDownload` no [DownloadController.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/downloads/DownloadController.kt).
+  - Implementação de loop ativo de polling (`startProgressPolling`) a cada 500ms lendo bytes e percentuais do `DownloadManager` e sincronizando com o Room em tempo real.
+  - Liberação de requisitos de rede restritivos (`Requirements(Requirements.NETWORK)`) e chamada a `resumeDownloads()` em [DownloadModule.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/downloads/DownloadModule.kt).
+  - Configuração de `followRedirects(true)`, `followSslRedirects(true)` e header `User-Agent` de player em [NetworkClient.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/network/NetworkClient.kt) e [DownloadModule.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/downloads/DownloadModule.kt) prevenindo bloqueios 403 de provedores IPTV.
+  - Mapeamento explícito de MIME Types (`VIDEO_MP4`, `VIDEO_MATROSKA`, `VIDEO_MP2T`, `APPLICATION_M3U8`, `APPLICATION_MPD`).
+- [x] **TASK-1102**: Criação do componente [NetflixDownloadButton.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/designsystem/components/NetflixDownloadButton.kt):
+  - Animação de início de download inspirada na Netflix: spinner contínuo de rotação suave e seta deslizando para dentro da bandeja.
+  - Anel de progresso circular dinâmico desenhado via Canvas com preenchimento em tempo real e ícone central de parada/pausa.
+  - Animação elástica (pop spring) para o estado concluído com checkmark verde esmeralda (`#10B981`).
+  - Tratamento interativo com suporte a pausar, retomar e feedback de status.
+- [x] **TASK-1103**: Integração do `NetflixDownloadButton` nos episódios de séries ([SeriesDetailScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesDetailScreen.kt)) e nos cards de filmes ([ChannelCard.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/designsystem/components/ChannelCard.kt)).
+- [x] **TASK-1104**: Testes unitários 100% aprovados, compilação do APK e deploy no Samsung Galaxy S23 Ultra (`SM-S918B`).
+
 
 

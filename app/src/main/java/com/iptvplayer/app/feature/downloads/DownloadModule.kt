@@ -52,6 +52,7 @@ object DownloadModule {
 
     fun getHttpDataSourceFactory(okHttpClient: OkHttpClient = NetworkClient.createOkHttpClient()): DataSource.Factory {
         return OkHttpDataSource.Factory(okHttpClient)
+            .setUserAgent("IPTVSmartPlayer/1.0 (Linux; Android) ExoPlayerLib/Media3")
     }
 
     @Synchronized
@@ -68,6 +69,10 @@ object DownloadModule {
 
             DownloadManager(ctx, db, cache, httpFactory, executor).apply {
                 this.maxParallelDownloads = maxParallelDownloads
+                this.requirements = androidx.media3.exoplayer.scheduler.Requirements(
+                    androidx.media3.exoplayer.scheduler.Requirements.NETWORK
+                )
+                this.resumeDownloads()
                 downloadManager = this
             }
         }

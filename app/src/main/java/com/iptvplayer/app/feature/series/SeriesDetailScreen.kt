@@ -60,6 +60,7 @@ import com.iptvplayer.app.core.database.AppDatabase
 import com.iptvplayer.app.core.database.entity.ChannelEntity
 import com.iptvplayer.app.core.database.entity.WatchProgressEntity
 import com.iptvplayer.app.core.database.model.DownloadStatus
+import com.iptvplayer.app.core.designsystem.components.NetflixDownloadButton
 import com.iptvplayer.app.core.designsystem.components.YouTubeProgressBar
 import com.iptvplayer.app.core.designsystem.theme.DarkBackground
 import com.iptvplayer.app.core.designsystem.theme.DarkSurface
@@ -405,31 +406,41 @@ fun SeriesDetailScreen(
                                 )
                             }
 
-                            // Ação: Download
-                            IconButton(
+                            // Ação: Download animado padrão Netflix
+                            NetflixDownloadButton(
+                                status = downloadEntity?.status,
+                                percent = downloadEntity?.percent ?: 0f,
                                 onClick = {
                                     scope.launch {
                                         try {
-                                            downloadController.startDownload(
-                                                contentId = episode.channel.id,
-                                                title = "${seriesDetails.seriesTitle} - ${episode.episodeTitle}",
-                                                sourceUrl = episode.channel.streamUrl,
-                                                posterUrl = episode.channel.logoUrl
-                                            )
-                                            snackbarHostState.showSnackbar("Baixando: ${episode.episodeTitle}")
+                                            when (downloadEntity?.status) {
+                                                DownloadStatus.DOWNLOADING, DownloadStatus.QUEUED -> {
+                                                    downloadController.pauseDownload(episode.channel.id)
+                                                    snackbarHostState.showSnackbar("Download pausado.")
+                                                }
+                                                DownloadStatus.PAUSED -> {
+                                                    downloadController.resumeDownload(episode.channel.id)
+                                                    snackbarHostState.showSnackbar("Retomando download...")
+                                                }
+                                                DownloadStatus.COMPLETED -> {
+                                                    snackbarHostState.showSnackbar("Episódio baixado e pronto para assistir offline!")
+                                                }
+                                                else -> {
+                                                    downloadController.startDownload(
+                                                        contentId = episode.channel.id,
+                                                        title = "${seriesDetails.seriesTitle} - ${episode.episodeTitle}",
+                                                        sourceUrl = episode.channel.streamUrl,
+                                                        posterUrl = episode.channel.logoUrl
+                                                    )
+                                                    snackbarHostState.showSnackbar("Iniciando download: ${episode.episodeTitle}")
+                                                }
+                                            }
                                         } catch (e: Exception) {
-                                            snackbarHostState.showSnackbar("Erro: ${e.localizedMessage}")
+                                            snackbarHostState.showSnackbar("Erro ao baixar: ${e.localizedMessage}")
                                         }
                                     }
                                 }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Download,
-                                    contentDescription = "Baixar episódio",
-                                    tint = if (isDownloaded) StatusDownloadedGreen else Color.White,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
+                            )
                         }
                     }
                 }

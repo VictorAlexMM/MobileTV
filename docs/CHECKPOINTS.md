@@ -221,5 +221,26 @@
   - [x] APK compilado com sucesso (`assembleDebug`) e instalado no Samsung Galaxy S23 Ultra (`SM-S918B`).
 - **Resultado**: APROVADO.
 
+---
+
+### CP-15: Polling Ativo de Downloads (Fim do 0% Eterno) e Botão Animado Estilo Netflix
+- **Objetivo**: Resolver o congelamento de downloads em 0%, garantir execução ininterrupta em primeiro plano no Android 12+, emitir progresso contínuo no Room e criar componente animado idêntico ao da Netflix ao iniciar, pausar e concluir downloads.
+- **Critérios de Validação**:
+  - [x] Corrigido `DownloadService.sendAddDownload` para executar como foreground service (`foreground = true`), impedindo que o Android suspenda o processo.
+  - [x] Implementado loop de polling ativo com coroutine a cada 500ms (`startProgressPolling`) no `DownloadController`, calculando bytes transferidos e percentual exato em tempo real.
+  - [x] Adicionado `User-Agent` de player ("IPTVSmartPlayer/1.0...") e habilitado `followRedirects` / `followSslRedirects` no OkHttpClient e Media3 HttpDataSource.
+  - [x] Inserido mapeamento estrito de MIME types (`.mp4`, `.mkv`, `.ts`, `.m3u8`, `.mpd`) para evitar falhas silenciosas de decodificação.
+  - [x] Criado componente Jetpack Compose `NetflixDownloadButton` com animação idêntica à Netflix:
+    - Arco contínuo giratório de iniciação e seta deslizando na bandeja (estado `QUEUED`).
+    - Anel circular preenchendo o progresso com ícone central quadrado de stop/pause (estado `DOWNLOADING`).
+    - Animação pop spring elástica com checkmark circular verde esmeralda (estado `COMPLETED`).
+    - Suporte a pause/resume interativo.
+  - [x] Integrado `NetflixDownloadButton` nos episódios da tela de detalhes de séries (`SeriesDetailScreen.kt`) e nos cards de filmes (`ChannelCard.kt`).
+  - [x] Testes unitários 100% aprovados (`testDebugUnitTest`).
+  - [x] Compilação do APK concluída com sucesso (`assembleDebug`).
+  - [x] APK instalado e validado no Samsung Galaxy S23 Ultra (`SM-S918B`).
+- **Resultado**: APROVADO.
+
+
 
 
