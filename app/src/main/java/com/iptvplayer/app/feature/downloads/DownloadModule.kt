@@ -38,17 +38,55 @@ object DownloadModule {
         }
     }
 
+    fun getDownloadDirectory(context: Context): File {
+        val appCtx = context.applicationContext
+        val externalDir = appCtx.getExternalFilesDir(null)
+        val downloadDir = if (externalDir != null) {
+            File(externalDir, "downloads")
+        } else {
+            File(appCtx.filesDir, "downloads")
+        }
+        if (!downloadDir.exists()) downloadDir.mkdirs()
+        return downloadDir
+    }
+
+    fun getDownloadDirSizeBytes(context: Context): Long {
+        val dir = getDownloadDirectory(context)
+        return calculateDirectorySize(dir)
+    }
+
+    private fun calculateDirectorySize(directory: File): Long {
+        var size = 0L
+        val files = directory.listFiles() ?: return 0L
+        for (file in files) {
+            size += if (file.isDirectory) calculateDirectorySize(file) else file.length()
+        }
+        return size
+    }
+
+    fun getDownloadedFilesList(context: Context): List<File> {
+        val dir = getDownloadDirectory(context)
+        return listAllFiles(dir).sortedByDescending { it.lastModified() }
+    }
+
+    private fun listAllFiles(directory: File): List<File> {
+        val result = mutableListOf<File>()
+        val files = directory.listFiles() ?: return emptyList()
+        for (file in files) {
+            if (file.isDirectory) {
+                result.addAll(listAllFiles(file))
+            } else {
+                result.add(file)
+            }
+        }
+        return result
+    }
+
     @Synchronized
     fun getDownloadCache(context: Context): Cache {
         return downloadCache ?: run {
             val appCtx = context.applicationContext
-            val externalDir = appCtx.getExternalFilesDir(null)
-            val downloadDir = if (externalDir != null) {
-                File(externalDir, "downloads")
-            } else {
-                File(appCtx.filesDir, "downloads")
-            }
-            if (!downloadDir.exists()) downloadDir.mkdirs()
+            val downloadDir = getDownloadDirectory(appCtx)
             val db = getDatabaseProvider(appCtx)
             SimpleCache(downloadDir, NoOpCacheEvictor(), db).also {
                 downloadCache = it

@@ -376,7 +376,11 @@ fun MainApp(
                         AppDestination.SETTINGS -> {
                             SettingsScreen(
                                 settingsRepository = settingsRepository,
-                                downloadController = downloadController
+                                downloadController = downloadController,
+                                database = database,
+                                onPlayOfflineItem = { download ->
+                                    handlePlay(download.id, download.title, download.sourceUrl, true)
+                                }
                             )
                         }
                     }

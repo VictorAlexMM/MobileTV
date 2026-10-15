@@ -270,6 +270,22 @@
   - [x] APK gerado com sucesso (`assembleDebug`) e instalado no Samsung Galaxy S23 Ultra (`SM-S918B`).
 - **Resultado**: APROVADO.
 
+---
+
+### CP-18: Exibição de Localização de Downloads, Acesso à Pasta e Explorador Integrado em Configurações
+- **Objetivo**: Disponibilizar no menu de Configurações a visualização transparente do diretório onde os downloads são salvos, fornecer atalhos de cópia e acesso à pasta via gerenciador de arquivos e um explorador duplo completo com mídias salvas e arquivos reais em disco.
+- **Critérios de Validação**:
+  - [x] Caminho de downloads visível e destacado no card de Armazenamento (`DownloadModule.getDownloadDirectory`).
+  - [x] Botão "Copiar Caminho" copia o diretório absoluto com feedback via Toast.
+  - [x] Botão "Acessar Pasta" dispara intents seguras com FileProvider e suporte a Samsung My Files e DocumentsUI, com modal explicativo em caso de restrições do SO.
+  - [x] Indicadores visuais com tamanho ocupado pelos downloads, espaço livre no celular e total de itens.
+  - [x] Aba "Mídias Salvas" com lista de itens baixados, informações de tamanho, data, botão de reprodução offline direta e botão de exclusão individual.
+  - [x] Aba "Arquivos Físicos no Disco" listando os arquivos reais presentes na pasta `downloads/` com tamanhos individuais e datas de modificação.
+  - [x] Ações em lote para pausar downloads e excluir todas as mídias salvas com diálogo de confirmação.
+  - [x] Testes unitários com 100% de aprovação (`BUILD SUCCESSFUL`).
+  - [x] Compilação do APK concluída com sucesso (`assembleDebug`).
+- **Resultado**: APROVADO.
+
 
 
 

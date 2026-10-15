@@ -300,6 +300,28 @@
     - O `DisposableEffect` do `PlayerScreen` e o `onClosePlayer` do `CompactPlayerView` agora acionam `playerEngine.stop()`, garantindo que sair da reprodução feche e cale o reprodutor instantaneamente.
 - **Consequências**: Mídias baixadas agora reproduzem com garantia total mesmo no modo avião ou sem nenhuma conexão à internet, e sair da tela de vídeo encerra a reprodução sem deixar áudio ou mini player residual aberto.
 
+---
+
+### ADR-021: Transparência de Armazenamento de Downloads, Acesso à Pasta e Explorador Integrado em Configurações
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: O usuário solicitou poder visualizar em Configurações exatamente onde os downloads estão sendo salvos no celular, conseguir acessar esse caminho e inspecionar os itens baixados diretamente.
+- **Decisão**:
+  - **Exposição do Diretório e Métricas de Disco**:
+    - Centralizou-se a resolução do caminho de downloads em `DownloadModule.getDownloadDirectory(context)`, apontando para o diretório de armazenamento privado do app (`context.getExternalFilesDir(null)/downloads` com fallback seguro para `filesDir/downloads`).
+    - Desenvolveu-se cálculo recursivo do tamanho real ocupado pelos arquivos baixados (`DownloadModule.getDownloadDirSizeBytes(context)`) e do espaço livre disponível no dispositivo (`StorageUtils.getAvailableStorageBytes(context)`).
+  - **Cópia e Acesso no Gerenciador de Arquivos**:
+    - Criação de `StorageUtils.kt` com suporte a cópia de caminho para o `ClipboardManager` com Toast de confirmação.
+    - Implementação de `StorageUtils.openFolderInFileManager` disparando intents para os gerenciadores de arquivos do sistema (Samsung My Files, Android DocumentsUI e FileProvider via `ACTION_VIEW`).
+    - Configurado `FileProvider` oficial com `file_paths.xml` em `AndroidManifest.xml` para conformidade com Scoped Storage no Android 11+.
+    - Implementação de modal explicativo de ajuda caso o sistema operacional aplique restrições de sandbox à pasta privada `/Android/data/`.
+  - **Explorador Duplo em Configurações (`SettingsScreen.kt`)**:
+    - **Aba "Mídias Salvas"**: Lista de filmes e episódios baixados do banco de dados Room com miniatura/poster, título, tamanho formatado em MB, data de download, botão para reprodução offline imediata no player e botão para exclusão individual.
+    - **Aba "Arquivos Físicos no Disco"**: Lista dos arquivos reais presentes no diretório `downloads/` com nomes no disco (ex: `.exo`, índices e metadados), tamanho individual em KB/MB e data de modificação.
+    - Ações em lote para pausar downloads ativos ou excluir todos os itens baixados com diálogo de confirmação.
+- **Consequências**: Transparência absoluta para o usuário sobre a localização física dos downloads no dispositivo, facilidade de cópia e acesso à pasta, e capacidade de inspecionar, reproduzir ou excluir qualquer mídia baixada a partir do painel de Configurações.
+
+
 
 
 

@@ -250,6 +250,33 @@
   - `onClosePlayer` do `CompactPlayerView` descarrega a mídia com `stop()`.
 - [x] **TASK-1304**: Validação completa com testes unitários aprovados (`testDebugUnitTest`), compilação do APK (`assembleDebug`) e instalação via ADB no Samsung Galaxy S23 Ultra (`SM-S918B`).
 
+---
+
+## Fase 14 — Exibição e Acesso ao Local de Armazenamento de Downloads & Explorador de Itens em Configurações
+
+- [x] **TASK-1401**: Exposição da infraestrutura de arquivos e diretórios de downloads em [DownloadModule.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/downloads/DownloadModule.kt):
+  - Implementação de `getDownloadDirectory(context)` retornando o diretório seguro (`getExternalFilesDir(null)/downloads`).
+  - Implementação de `getDownloadDirSizeBytes(context)` calculando recursivamente o espaço total ocupado pelos fragmentos de mídia baixados.
+  - Implementação de `getDownloadedFilesList(context)` listando os arquivos reais presentes em disco com datas de modificação e tamanhos.
+- [x] **TASK-1402**: Criação do utilitário de armazenamento [StorageUtils.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/common/StorageUtils.kt):
+  - Formatação precisa de bytes (`formatBytes`) em B, KB, MB, GB, TB.
+  - Formatação de data/hora (`formatDate`).
+  - Cálculo de espaço livre e total em disco (`getAvailableStorageBytes`).
+  - Cópia segura de caminho para o `ClipboardManager` com Toast de confirmação.
+  - Disparo de intents de gerenciador de arquivos nativo (`openFolderInFileManager`) com suporte ao Samsung My Files, DocumentsUI e FileProvider.
+- [x] **TASK-1403**: Configuração de segurança com `FileProvider` e [file_paths.xml](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/res/xml/file_paths.xml):
+  - Declaração de `androidx.core.content.FileProvider` em [AndroidManifest.xml](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/AndroidManifest.xml) com rotas para diretórios internos e externos.
+- [x] **TASK-1404**: Reformulação da seção de Armazenamento em [SettingsScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/settings/SettingsScreen.kt):
+  - Painel com caminho absoluto visível em tipografia monoespaçada com borda escura.
+  - Botão "Copiar Caminho" (`ContentCopy`) para área de transferência.
+  - Botão "Acessar Pasta" (`FolderOpen`) para abrir o gerenciador de arquivos nativo do aparelho (com modal explicativo caso haja restrições do Android).
+  - Cards de métricas com espaço ocupado pelos downloads, espaço livre no celular e total de itens.
+  - Explorador integrado com abas "Mídias Salvas" (com poster, título, data, tamanho, botão reproduzir offline direto e botão excluir) e "Arquivos Físicos" (listando fragmentos e arquivos reais do disco).
+  - Diálogos para confirmação de exclusão em massa e ajuda de acesso à pasta.
+- [x] **TASK-1405**: Conexão da navegação em [MainApp.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/ui/MainApp.kt):
+  - Injeção de `database` e callback `onPlayOfflineItem` permitindo tocar mídias offline diretamente da tela de Configurações.
+- [x] **TASK-1406**: Validação rigorosa com testes unitários (`testDebugUnitTest` 100% aprovados) e compilação do APK (`assembleDebug` bem-sucedido).
+
 
 
 
