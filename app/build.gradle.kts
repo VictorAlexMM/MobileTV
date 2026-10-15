@@ -117,3 +117,19 @@ dependencies {
   androidTestImplementation(libs.androidx.test.runner)
   androidTestImplementation(libs.androidx.test.espresso.core)
 }
+
+val apkMobileDir = layout.projectDirectory.dir("../apk/mobile")
+
+tasks.register<Copy>("copyMobileApk") {
+  description = "Copia o APK gerado para a pasta apk/mobile"
+  from(layout.buildDirectory.dir("outputs/apk/debug"))
+  include("app-debug.apk")
+  into(apkMobileDir)
+  rename("app-debug.apk", "MobileTV-Mobile-debug.apk")
+}
+
+tasks.matching { it.name == "assembleDebug" }.configureEach {
+  finalizedBy("copyMobileApk")
+}
+
+

@@ -384,6 +384,10 @@
   - Remoção do botão de play redundante na lateral direita do card, pois o toque em qualquer área do card já dispara a retomada da reprodução.
   - Redesenho dos botões de Reiniciar (`Replay`) e Apagar (`Close`) utilizando containers circulares de 32dp sem padding fantasma de 48dp, liberando espaço amplo para título, categoria e tempo restante.
   - Verificação e aprovação visual direta no Samsung Galaxy S23 Ultra via captura de tela ADB.
+- [x] **TASK-1907**: Criação da pasta dedicada para APKs mobile e automação de build:
+  - Criação do diretório [apk/mobile/](file:///c:/Users/victor.mota/Desktop/New/app/apk/mobile) na raiz do projeto com guia de instalação em [apk/README.md](file:///c:/Users/victor.mota/Desktop/New/app/apk/README.md).
+  - Cópia do APK compilado `MobileTV-Mobile-debug.apk` e atalho `apk/MobileTV.apk`.
+  - Configuração da task Gradle `copyMobileApk` em [app/build.gradle.kts](file:///c:/Users/victor.mota/Desktop/New/app/app/build.gradle.kts) para copiar automaticamente o APK recém-gerado a cada execução de `assembleDebug`.
 
 
 
