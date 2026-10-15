@@ -7,11 +7,21 @@ import com.iptvplayer.app.core.database.AppDatabase
 import com.iptvplayer.app.core.database.entity.ChannelEntity
 import com.iptvplayer.app.core.database.entity.DownloadEntity
 import com.iptvplayer.app.core.database.model.ContentType
+import com.iptvplayer.app.core.database.model.PlaylistType
+import com.iptvplayer.app.core.network.NetworkClient
+import com.iptvplayer.app.core.network.NetworkGate
+import com.iptvplayer.app.feature.series.SeriesDetails
+import com.iptvplayer.app.feature.series.SeriesMetadataHelper
+import com.iptvplayer.app.parser.xtream.XtreamApiService
 import kotlinx.coroutines.flow.Flow
 
-class ChannelRepository(private val database: AppDatabase) {
+class ChannelRepository(
+    private val database: AppDatabase,
+    private val networkGate: NetworkGate? = null
+) {
     private val channelDao = database.channelDao()
     private val downloadDao = database.downloadDao()
+    private val playlistDao = database.playlistDao()
 
     fun getChannelsPaged(playlistId: Long, contentType: ContentType): Flow<PagingData<ChannelEntity>> {
         return Pager(
@@ -72,6 +82,59 @@ class ChannelRepository(private val database: AppDatabase) {
 
     fun getAllWatchProgress(): Flow<List<com.iptvplayer.app.core.database.entity.WatchProgressEntity>> {
         return database.watchProgressDao().getAllProgress()
+    }
+
+    /**
+     * Carrega os detalhes completos e todos os episódios estritamente pertencentes
+     * à série selecionada, isolando-a de canais ou episódios de outras séries.
+     * Suporta tanto playlists M3U (Room DB) quanto Xtream Codes (API get_series_info).
+     */
+    suspend fun loadSeriesDetails(item: ChannelEntity): SeriesDetails {
+        val playlist = playlistDao.getPlaylistById(item.playlistId)
+
+        // 1. Resolução via API Xtream Codes
+        if (playlist != null && playlist.type == PlaylistType.XTREAM) {
+            val seriesId = when {
+                item.id.contains("_series_") -> item.id.substringAfterLast("_series_")
+                item.streamUrl.contains("/series/") -> item.streamUrl.substringAfterLast("/").trim()
+                else -> ""
+            }
+
+            val rawUrl = playlist.url
+            if (seriesId.isNotBlank() && !rawUrl.isNullOrBlank() && (networkGate == null || networkGate.canAccessNetwork())) {
+                try {
+                    val cleanServer = if (rawUrl.endsWith("/")) rawUrl.trim() else "${rawUrl.trim()}/"
+                    val retrofit = NetworkClient.createRetrofit(cleanServer, NetworkClient.createOkHttpClient())
+                    val api = retrofit.create(XtreamApiService::class.java)
+                    val response = api.getSeriesInfo(
+                        user = playlist.username.orEmpty(),
+                        pass = playlist.password.orEmpty(),
+                        seriesId = seriesId
+                    )
+                    val jsonStr = response.string()
+                    return SeriesMetadataHelper.parseXtreamSeriesInfo(
+                        jsonString = jsonStr,
+                        seriesItem = item,
+                        cleanServer = cleanServer,
+                        username = playlist.username.orEmpty(),
+                        password = playlist.password.orEmpty()
+                    )
+                } catch (_: Exception) {
+                    // Se falhar a conexão, faz o fallback gracioso para os dados locais
+                }
+            }
+        }
+
+        // 2. Resolução para playlists M3U locais
+        val pureTitle = SeriesMetadataHelper.extractPureSeriesTitle(item.name)
+        val candidates = channelDao.getSeriesEpisodes(item.playlistId, pureTitle)
+
+        val matched = candidates.filter { candidate ->
+            SeriesMetadataHelper.isMatchingSeries(candidate.name, pureTitle)
+        }
+
+        val finalEpisodes = if (matched.isNotEmpty()) matched else listOf(item)
+        return SeriesMetadataHelper.groupEpisodes(finalEpisodes, fallbackSeriesTitle = pureTitle)
     }
 }
 

@@ -91,6 +91,7 @@ fun SeriesScreen(
     var showGoOnlineDialog by remember { mutableStateOf(false) }
     var pendingSeriesToPlay by remember { mutableStateOf<Pair<ChannelEntity, Boolean>?>(null) }
     var selectedSeriesDetails by remember { mutableStateOf<SeriesDetails?>(null) }
+    var isLoadingSeriesDetails by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val categories by if (activePlaylistId != null) {
@@ -353,17 +354,12 @@ fun SeriesScreen(
                                 onCardClick = {
                                     scope.launch {
                                         try {
-                                            val group = item.groupTitle
-                                            val rawTitle = SeriesMetadataHelper.cleanSeriesTitle(item.name)
-                                            val episodes = if (!group.isNullOrBlank()) {
-                                                val byGroup = repository.getChannelsByGroup(activePlaylistId, ContentType.SERIES, group)
-                                                if (byGroup.isNotEmpty()) byGroup else listOf(item)
-                                            } else {
-                                                listOf(item)
-                                            }
-                                            selectedSeriesDetails = SeriesMetadataHelper.groupEpisodes(episodes, fallbackSeriesTitle = rawTitle)
+                                            isLoadingSeriesDetails = true
+                                            selectedSeriesDetails = repository.loadSeriesDetails(item)
                                         } catch (e: Exception) {
                                             selectedSeriesDetails = SeriesMetadataHelper.groupEpisodes(listOf(item), fallbackSeriesTitle = item.name)
+                                        } finally {
+                                            isLoadingSeriesDetails = false
                                         }
                                     }
                                 },
@@ -428,6 +424,30 @@ fun SeriesScreen(
                             text = if (searchQuery.isNotBlank()) "Nenhuma série para \"$searchQuery\"" else "Nenhuma série encontrada nesta categoria.",
                             style = MaterialTheme.typography.bodyMedium.copy(color = TextMutedDark),
                             textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+
+            // Overlay de Carregamento dos Episódios da Série
+            if (isLoadingSeriesDetails) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.75f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(color = PrimaryIndigo, modifier = Modifier.size(44.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = "Carregando temporadas e episódios...",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }

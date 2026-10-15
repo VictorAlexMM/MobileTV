@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
         val networkGate = NetworkGate(connectivityObserver, settingsRepository, lifecycleScope)
 
         val playlistRepository = PlaylistRepository(database, networkGate)
-        val channelRepository = ChannelRepository(database)
+        val channelRepository = ChannelRepository(database, networkGate)
         val downloadController = DownloadController(this, database, settingsRepository, lifecycleScope)
 
         playerEngine = PlayerEngine(this, networkGate, lifecycleScope) { contentId, pos, dur ->

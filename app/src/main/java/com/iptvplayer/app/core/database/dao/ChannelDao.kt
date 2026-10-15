@@ -104,6 +104,22 @@ interface ChannelDao {
         groupTitle: String
     ): List<ChannelEntity>
 
+    /**
+     * Retorna episódios de uma série específica dentro de uma playlist ou globalmente,
+     * buscando por correspondência parcial no nome do episódio ou no grupo da série.
+     */
+    @Query("""
+        SELECT * FROM channels 
+        WHERE (:playlistId IS NULL OR playlistId = :playlistId) 
+          AND contentType = 'SERIES' 
+          AND (name LIKE '%' || :seriesQuery || '%' OR groupTitle LIKE '%' || :seriesQuery || '%')
+        ORDER BY name ASC
+    """)
+    suspend fun getSeriesEpisodes(
+        playlistId: Long?,
+        seriesQuery: String
+    ): List<ChannelEntity>
+
     @Query("SELECT * FROM channels WHERE isFavorite = 1 ORDER BY name ASC")
     fun getFavoriteChannels(): Flow<List<ChannelEntity>>
 

@@ -190,4 +190,18 @@
     - Ao desmarcar: remove o registro do Room, limpando a barra e o status.
 - **Consequências**: Familiaridade imediata com o padrão visual consagrado pelo YouTube e controle preciso sobre o histórico de exibição.
 
+---
+
+### ADR-015: Resolução Precisa de Séries e Isolamento Estrito de Episódios (Xtream Codes API & M3U)
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Ao abrir uma série, o app agrupava previamente todos os canais do mesmo `groupTitle` genérico (ex: "SÉRIES NETFLIX"), fazendo com que episódios de dezenas de séries diferentes fossem exibidos misturados como se fossem da mesma temporada. Ademais, em playlists Xtream Codes, o Room armazena apenas a série como cabeçalho e os episódios requerem requisição dedicada à API `get_series_info`.
+- **Decisão**:
+  - Implementar o método `getSeriesInfo` em `XtreamApiService` e parser nativo `SeriesMetadataHelper.parseXtreamSeriesInfo` para extrair sob demanda as temporadas, sinopses e URLs de streaming diretas da API Xtream Codes (`/series/username/password/id.ext`).
+  - Implementar query Room `ChannelDao.getSeriesEpisodes` para mídias M3U e aplicar filtragem estrita em Kotlin (`isMatchingSeries`) que descarta com rigor qualquer item cujo título normalizado não corresponda à série aberta.
+  - Utilizar limites de palavras (`\b`) nas regexes de limpeza de metadados para tokens como `S01`, `T01`, `1x01` e `Temp 1`, prevenindo falsos positivos em títulos como "Stranger Things" (onde a terminação em "s" era equivocadamente capturada como marcador de temporada).
+  - Unificar a resolução no método `ChannelRepository.loadSeriesDetails(item)` com feedback de carregamento suave na interface (`isLoadingSeriesDetails`).
+- **Consequências**: Resolução exata de episódios sem vazamento de outras séries, compatibilidade total tanto com playlists M3U brutas quanto servidores Xtream Codes, e integridade blindada por testes unitários.
+
+
 

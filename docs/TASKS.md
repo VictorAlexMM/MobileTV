@@ -153,3 +153,19 @@
 - [x] **TASK-706**: Controle de áudio mudo/desmudo (`isMuted`, `toggleMute`) integrado no [PlayerEngine.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/PlayerEngine.kt), [CompactPlayerView.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/CompactPlayerView.kt) e [PlayerScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/PlayerScreen.kt).
 - [x] **TASK-707**: Compilação e deploy direto no smartphone conectado (`SM-S918B`) via `adb install -r -t` para testes físicos autônomos sem necessidade de Android Studio.
 
+---
+
+## Fase 8 — Resolução Precisa de Séries e Isolamento Estrito de Episódios (M3U & Xtream Codes)
+
+- [x] **TASK-801**: Implementação de endpoint `getSeriesInfo` em [XtreamApiService.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/parser/xtream/XtreamApiService.kt) para consulta da action `get_series_info` da API Xtream Codes retornando detalhes completos de temporadas e episódios.
+- [x] **TASK-802**: Adição de query Room especializada em [ChannelDao.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/database/dao/ChannelDao.kt) (`getSeriesEpisodes`) para buscar episódios por correspondência no nome da série ou grupo da playlist.
+- [x] **TASK-803**: Motor aprimorado de correspondência e limpeza em [SeriesMetadataHelper.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesMetadataHelper.kt):
+  - Limpeza de tags e prefixos `[BR]`, `(DUB)`, `SÉRIES |`, etc.
+  - Limites de palavra (`\b`) para tokens de temporada/episódio (`S01`, `T01`, `1x01`, `Temp 1`, `Episódio 1`), evitando cortes em títulos como `Stranger Things`.
+  - Comparação estrita anti-mistura (`isMatchingSeries`) que descarta automaticamente episódios de séries aleatórias da mesma categoria.
+- [x] **TASK-804**: Parser JSON robusto e resiliente [SeriesMetadataHelper.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesMetadataHelper.kt)`::parseXtreamSeriesInfo` para extrair sinopses, capas, temporadas e URLs de stream individuais reproduzíveis (`/series/user/pass/id.ext`).
+- [x] **TASK-805**: Método unificado `loadSeriesDetails` em [ChannelRepository.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/live/ChannelRepository.kt) e overlay de carregamento elegante em [SeriesScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesScreen.kt) (`isLoadingSeriesDetails`).
+- [x] **TASK-806**: Cobertura completa de testes unitários em [SeriesMetadataHelperTest.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/test/java/com/iptvplayer/app/feature/series/SeriesMetadataHelperTest.kt) (100% de aprovação).
+- [x] **TASK-807**: Compilação e instalação direta no Samsung Galaxy S23 Ultra (`SM-S918B`).
+
+

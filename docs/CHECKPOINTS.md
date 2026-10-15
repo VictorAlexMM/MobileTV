@@ -172,4 +172,19 @@
   - [x] Build bem-sucedido e APK instalado com sucesso no Samsung Galaxy S23 Ultra (`SM-S918B`).
 - **Resultado**: APROVADO.
 
+---
+
+### CP-12: Resolução Estrita de Séries e Isolamento de Episódios (M3U & Xtream Codes)
+- **Objetivo**: Corrigir a abertura de séries para carregar rigorosamente e exclusivamente os episódios pertencentes à série clicada, sem misturar episódios aleatórios da mesma categoria ou outras séries, suportando nativamente servidores Xtream Codes (`get_series_info`) e listas M3U.
+- **Critérios de Validação**:
+  - [x] Endpoint `XtreamApiService.getSeriesInfo` adicionado para consultar `action=get_series_info` da API Xtream Codes.
+  - [x] Query Room `ChannelDao.getSeriesEpisodes` com busca canônica por título/grupo.
+  - [x] Motor avançado de regex em `SeriesMetadataHelper` com limites de palavra (`\b`) prevenindo falsos positivos (ex: `Stranger Things`), suporte a `1x01` e filtro estrito anti-mistura (`isMatchingSeries`).
+  - [x] Parser JSON `parseXtreamSeriesInfo` montando episódios com URLs de streaming reproduzíveis (`/series/user/pass/id.ext`).
+  - [x] Resolução unificada em `ChannelRepository.loadSeriesDetails` com indicador de loading animado em `SeriesScreen` (`isLoadingSeriesDetails`).
+  - [x] Testes unitários dedicados em `SeriesMetadataHelperTest` com 100% de sucesso.
+  - [x] Compilação e instalação direta no Samsung Galaxy S23 Ultra (`SM-S918B`).
+- **Resultado**: APROVADO.
+
+
 

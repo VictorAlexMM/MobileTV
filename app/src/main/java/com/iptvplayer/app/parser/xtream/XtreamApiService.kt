@@ -1,5 +1,6 @@
 package com.iptvplayer.app.parser.xtream
 
+import okhttp3.ResponseBody
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -55,4 +56,12 @@ interface XtreamApiService {
         @Query("action") action: String = "get_series",
         @Query("category_id") categoryId: String? = null
     ): List<XtreamSeriesItem>
+
+    @GET("player_api.php")
+    suspend fun getSeriesInfo(
+        @Query("username") user: String,
+        @Query("password") pass: String,
+        @Query("action") action: String = "get_series_info",
+        @Query("series_id") seriesId: String
+    ): ResponseBody
 }
