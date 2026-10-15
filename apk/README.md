@@ -4,8 +4,9 @@ Esta pasta contém os pacotes APK compilados do **MobileTV** prontos para instal
 
 ## Estrutura de Pastas
 
-- **[`apk/mobile/`](./mobile/)**: Contém a versão compilada para smartphones e dispositivos móveis (`MobileTV-Mobile-debug.apk`).
-- **`apk/MobileTV.apk`**: Atalho direto para o último APK compilado.
+- **[`apk/mobile/`](./mobile/)**: Contém a versão compilada para smartphones e tablets Android (`MobileTV-Mobile-debug.apk`).
+- **[`apk/tv/`](./tv/)**: Contém a versão com suporte a controle remoto (D-Pad), Leanback Launcher e banner para Smart TV, Android TV, Google TV e Fire TV (`MobileTV-TV-debug.apk`).
+- **`apk/MobileTV.apk`**: Atalho direto para o último APK universal compilado.
 
 ## Como Instalar no Celular
 

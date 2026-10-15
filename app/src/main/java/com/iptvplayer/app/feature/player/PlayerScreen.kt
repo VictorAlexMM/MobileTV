@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,7 +62,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -90,6 +98,12 @@ fun PlayerScreen(
     var showControls by remember { mutableStateOf(true) }
     var showRecordDialog by remember { mutableStateOf(false) }
     var selectedDurationMinutes by remember { mutableIntStateOf(30) }
+    val playerFocusRequester = remember { FocusRequester() }
+
+    // Foco automático para captura de comandos do controle remoto (Smart TV / D-Pad)
+    LaunchedEffect(Unit) {
+        playerFocusRequester.requestFocus()
+    }
 
     // Esconde os controles automaticamente após 4 segundos
     LaunchedEffect(showControls, uiState.isPlaying) {
@@ -121,6 +135,49 @@ fun PlayerScreen(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
+            .focusRequester(playerFocusRequester)
+            .focusable()
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.type == KeyEventType.KeyDown) {
+                    when (keyEvent.key) {
+                        Key.DirectionCenter,
+                        Key.Enter,
+                        Key.MediaPlayPause -> {
+                            if (uiState.isPlaying) playerEngine.pause() else playerEngine.play()
+                            showControls = true
+                            true
+                        }
+                        Key.MediaPlay -> {
+                            playerEngine.play()
+                            showControls = true
+                            true
+                        }
+                        Key.MediaPause -> {
+                            playerEngine.pause()
+                            showControls = true
+                            true
+                        }
+                        Key.DirectionRight,
+                        Key.MediaFastForward -> {
+                            playerEngine.seekTo(uiState.currentPositionMs + 10000)
+                            showControls = true
+                            true
+                        }
+                        Key.DirectionLeft,
+                        Key.MediaRewind -> {
+                            playerEngine.seekTo(uiState.currentPositionMs - 10000)
+                            showControls = true
+                            true
+                        }
+                        Key.DirectionUp,
+                        Key.DirectionDown -> {
+                            showControls = !showControls
+                            true
+                        }
+                        else -> false
+                    }
+                } else false
+            }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null

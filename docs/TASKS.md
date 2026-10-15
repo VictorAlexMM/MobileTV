@@ -389,6 +389,27 @@
   - Cópia do APK compilado `MobileTV-Mobile-debug.apk` e atalho `apk/MobileTV.apk`.
   - Configuração da task Gradle `copyMobileApk` em [app/build.gradle.kts](file:///c:/Users/victor.mota/Desktop/New/app/app/build.gradle.kts) para copiar automaticamente o APK recém-gerado a cada execução de `assembleDebug`.
 
+---
+
+## [Fase 20] Suporte Completo a Android TV e Geração de APK para Smart TV
+- [x] **TASK-2001**: Declarações de compatibilidade para Android TV em [AndroidManifest.xml](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/AndroidManifest.xml):
+  - Inclusão de `android.software.leanback` com `required="false"`.
+  - Inclusão de `android.hardware.touchscreen` com `required="false"` (obrigatório para que lojas de TV e dispositivos permitam a instalação).
+  - Configuração de `android.hardware.microphone`, `camera`, `bluetooth` e `wifi` como opcionais.
+  - Adição do intent-filter `android.intent.category.LEANBACK_LAUNCHER` na `MainActivity` para exibição no menu inicial de Smart TVs, Google TV e Fire TV.
+  - Declaração de `android:banner="@drawable/tv_banner"` na aplicação e na atividade principal.
+- [x] **TASK-2002**: Criação do banner vetorial 16:9 para a TV em [tv_banner.xml](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/res/drawable/tv_banner.xml):
+  - Design premium com fundo gradiente escuro, moldura de Smart TV em destaque indigo, ícone play e barra de progresso vermelha, otimizado para telas 1080p e 4K.
+- [x] **TASK-2003**: Destaque visual e navegação D-Pad em [TvFocusHighlight.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/designsystem/components/TvFocusHighlight.kt):
+  - Implementação do modifier `Modifier.tvFocusable(shape, focusedBorderColor, focusedScale)` com animação suave de ampliação (scale 1.04x) e borda de destaque iluminada quando o elemento ganha foco via setas do controle remoto.
+  - Aplicação nos cards da tela inicial ([HomeScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/home/HomeScreen.kt)) e nos cards de canais ([ChannelCard.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/designsystem/components/ChannelCard.kt)).
+- [x] **TASK-2004**: Controles nativos por controle remoto no player em [PlayerScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/PlayerScreen.kt):
+  - Captura e tratamento de teclas D-Pad e de controle remoto: `Key.DirectionCenter` / `Key.Enter` / `Key.MediaPlayPause` (toggle play/pause), `Key.DirectionRight` / `Key.MediaFastForward` (avanço de 10s), `Key.DirectionLeft` / `Key.MediaRewind` (retrocesso de 10s), e `Key.DirectionUp` / `Key.DirectionDown` (exibição de controles).
+- [x] **TASK-2005**: Automação de compilação e pasta dedicada [apk/tv/](file:///c:/Users/victor.mota/Desktop/New/app/apk/tv):
+  - Configuração das tasks `copyTvApk` e `copyAllApks` em [app/build.gradle.kts](file:///c:/Users/victor.mota/Desktop/New/app/app/build.gradle.kts) vinculadas ao ciclo `assembleDebug`.
+  - Geração de `apk/tv/MobileTV-TV-debug.apk` e documentação detalhada com métodos de instalação (Wi-Fi ADB, pendrive USB e Send Files to TV) em [apk/tv/README.md](file:///c:/Users/victor.mota/Desktop/New/app/apk/tv/README.md).
+- [x] **TASK-2006**: Validação com testes unitários (`testDebugUnitTest` 100% aprovados) e compilação do APK de TV com sucesso.
+
 
 
 

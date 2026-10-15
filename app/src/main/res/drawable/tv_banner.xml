@@ -1,0 +1,104 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+
+    <!-- Fundo Escuro com Gradiente Indigo para Android TV -->
+    <path
+        android:pathData="M0,0h320v180h-320z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="320"
+                android:endY="180"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FF1A1D2E" />
+                <item android:offset="0.5" android:color="#FF11131F" />
+                <item android:offset="1.0" android:color="#FF0D0E15" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Brilho Ambiente Superior em Indigo -->
+    <path
+        android:pathData="M0,0h320v90h-320z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="160"
+                android:startY="0"
+                android:endX="160"
+                android:endY="90"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#334F46E5" />
+                <item android:offset="1.0" android:color="#00000000" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Base do Suporte da TV -->
+    <path
+        android:fillColor="#FF374151"
+        android:pathData="M140,140 h40 v4 h-40 z" />
+    <path
+        android:fillColor="#FF4B5563"
+        android:pathData="M156,128 h8 v12 h-8 z" />
+
+    <!-- Moldura da Smart TV (Centralizada) -->
+    <path
+        android:fillColor="#FF1F2430"
+        android:strokeColor="#FF6366F1"
+        android:strokeWidth="2.5"
+        android:pathData="M100,48 h120 c4.4,0 8,3.6 8,8 v64 c0,4.4 -3.6,8 -8,8 h-120 c-4.4,0 -8,-3.6 -8,-8 v-64 c0,-4.4 3.6,-8 8,-8 z" />
+
+    <!-- Tela Interna da Smart TV -->
+    <path
+        android:pathData="M104,54 h112 c2.2,0 4,1.8 4,4 v52 c0,2.2 -1.8,4 -4,4 h-112 c-2.2,0 -4,-1.8 -4,-4 v-52 c0,-2.2 1.8,-4 4,-4 z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="104"
+                android:startY="54"
+                android:endX="216"
+                android:endY="114"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FF2E3650" />
+                <item android:offset="1.0" android:color="#FF181B26" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Círculo de Destaque Play -->
+    <path
+        android:fillColor="#FF6366F1"
+        android:pathData="M160,84 m-18,0 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0" />
+
+    <!-- Triângulo de Play -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M154,75 L170,84 L154,93 Z" />
+
+    <!-- Antena Esquerda da TV -->
+    <path
+        android:strokeColor="#FF818CF8"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M160,48 L142,32" />
+
+    <!-- Antena Direita da TV -->
+    <path
+        android:strokeColor="#FF818CF8"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M160,48 L178,32" />
+
+    <!-- Barra de Progresso Vermelha YouTube na Base da Tela -->
+    <path
+        android:fillColor="#FFFF0000"
+        android:pathData="M104,112 h60 v2 h-60 z" />
+    <path
+        android:fillColor="#33FFFFFF"
+        android:pathData="M164,112 h52 v2 h-52 z" />
+
+</vector>

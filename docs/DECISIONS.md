@@ -435,6 +435,27 @@
     - Redução de padding do banner de boas-vindas para um visual mais sutil, integrado e de alto padrão visual.
 - **Consequências**: A tela inicial fica limpa, moderna e ergonômica. O espaçamento não quebra, o texto ganha amplitude legível, e o usuário mantém total controle para continuar (com um toque no card), reiniciar ou apagar.
 
+---
+
+### ADR-027: Suporte Universal a Android TV, Leanback Launcher e Navegação D-Pad
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: O usuário solicitou a criação de um APK para Android TV mantendo rigorosamente todas as funcionalidades da versão mobile (canais ao vivo, filmes VOD, séries agrupadas por temporada, player com barra do YouTube, sincronização automática e favoritos). Para que um app funcione em Smart TVs, Google TV e Fire TV, é necessário suporte a hardware sem touchscreen, declaração de Leanback Launcher no manifesto, banner 16:9 de alta resolução, navegação visual clara via controle remoto (D-Pad) e manipulação de teclas multimídia no player.
+- **Decisão**:
+  - **Manifesto Android TV (`AndroidManifest.xml`)**:
+    - Declarado `android.software.leanback` com `required="false"` e `android.hardware.touchscreen` com `required="false"`, permitindo que o APK seja instalado em qualquer televisão Android sem ser bloqueado pela ausência de tela sensível ao toque.
+    - Adicionado o intent-filter `android.intent.category.LEANBACK_LAUNCHER` na `MainActivity`, garantindo que o aplicativo apareça diretamente na tela inicial / carrossel de apps da Smart TV.
+    - Criado e referenciado o banner oficial 16:9 (`tv_banner.xml`) em `<application>` e `<activity>`.
+  - **Destaque Visual D-Pad (`TvFocusHighlight.kt`)**:
+    - Criado o modifier `Modifier.tvFocusable()` com ampliação suave (`scale = 1.04f`) e borda nítida iluminada ao receber foco pelas setas do controle remoto.
+    - Aplicado aos cards de Continuar Assistindo, Acesso Rápido, Canais Favoritos e lista de canais/VOD.
+  - **Controles por Controle Remoto no Player (`PlayerScreen.kt`)**:
+    - Interceptação de eventos de teclado com foco automático: `Key.DirectionCenter` / `Key.Enter` / `Key.MediaPlayPause` (toggle play/pause), `Key.DirectionRight` / `Key.MediaFastForward` (+10s), `Key.DirectionLeft` / `Key.MediaRewind` (-10s), e `Key.DirectionUp` / `Key.DirectionDown` (exibir/ocultar barra de controle).
+  - **Estrutura de Distribuição e Automação Gradle (`app/build.gradle.kts`)**:
+    - Criação da pasta `apk/tv/` contendo `MobileTV-TV-debug.apk` e guia de instalação via rede Wi-Fi, pendrive ou Send Files to TV em `apk/tv/README.md`.
+    - Task automatizada `copyTvApk` e `copyAllApks` vinculada a `assembleDebug`, atualizando instantaneamente os pacotes em `apk/mobile/` e `apk/tv/`.
+- **Consequências**: Experiência de Smart TV nativa e imersiva. O aplicativo pode ser operado com controle remoto a metros de distância sem dificuldades, enquanto mantém paridade total de 100% dos recursos e estabilidade da versão para smartphone.
+
 
 
 

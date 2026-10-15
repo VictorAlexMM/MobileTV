@@ -62,6 +62,7 @@ fun ChannelCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .tvFocusable(shape = RoundedCornerShape(14.dp))
             .clip(RoundedCornerShape(14.dp))
             .clickable(onClick = onCardClick),
         colors = CardDefaults.cardColors(

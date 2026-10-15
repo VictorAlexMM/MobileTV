@@ -369,6 +369,23 @@
   - [x] Instalação validada via ADB no Samsung Galaxy S23 Ultra (`RQCW1067EEB` - `Success`) com verificação visual perfeita via captura de tela.
 - **Resultado**: APROVADO.
 
+---
+
+### CP-24: APK Android TV, Leanback Launcher e Navegação por Controle Remoto (D-Pad)
+- **Objetivo**: Configurar compatibilidade total com Android TV e Google TV sem perder qualquer funcionalidade mobile, implementar suporte a controle remoto D-Pad com realce visual de foco, banner oficial de TV e automatizar a geração de APKs para mobile e TV.
+- **Critérios de Validação**:
+  - [x] Declarações de `android.software.leanback` e `android.hardware.touchscreen` opcionais no manifesto.
+  - [x] Categoria `LEANBACK_LAUNCHER` e banner `tv_banner.xml` adicionados no `AndroidManifest.xml`.
+  - [x] Criação de `tv_banner.xml` vetorial 16:9 de alta resolução.
+  - [x] Criação do modifier `Modifier.tvFocusable()` com ampliação e borda de realce ao receber foco do controle.
+  - [x] Aplicação de `tvFocusable` nos cards da tela inicial e listas de canais/mídias.
+  - [x] Controles do player mapeados para teclas D-Pad e controle multimídia (`DirectionCenter`, `Enter`, `MediaPlayPause`, `DirectionRight`, `DirectionLeft`, `DirectionUp`, `DirectionDown`).
+  - [x] Pasta `apk/tv/` criada contendo `MobileTV-TV-debug.apk` e documentação de instalação (`apk/tv/README.md`).
+  - [x] Automação Gradle via `copyTvApk` e `copyAllApks` vinculada a `assembleDebug`.
+  - [x] Testes unitários com 100% de aprovação (`BUILD SUCCESSFUL`).
+  - [x] Compilação dos APKs concluída com êxito (`MobileTV-TV-debug.apk` e `MobileTV-Mobile-debug.apk`).
+- **Resultado**: APROVADO.
+
 
 
 

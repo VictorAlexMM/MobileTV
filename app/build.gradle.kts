@@ -119,17 +119,34 @@ dependencies {
 }
 
 val apkMobileDir = layout.projectDirectory.dir("../apk/mobile")
+val apkTvDir = layout.projectDirectory.dir("../apk/tv")
 
 tasks.register<Copy>("copyMobileApk") {
   description = "Copia o APK gerado para a pasta apk/mobile"
+  dependsOn("packageDebug")
   from(layout.buildDirectory.dir("outputs/apk/debug"))
   include("app-debug.apk")
   into(apkMobileDir)
   rename("app-debug.apk", "MobileTV-Mobile-debug.apk")
 }
 
-tasks.matching { it.name == "assembleDebug" }.configureEach {
-  finalizedBy("copyMobileApk")
+tasks.register<Copy>("copyTvApk") {
+  description = "Copia o APK gerado para a pasta apk/tv"
+  dependsOn("packageDebug")
+  from(layout.buildDirectory.dir("outputs/apk/debug"))
+  include("app-debug.apk")
+  into(apkTvDir)
+  rename("app-debug.apk", "MobileTV-TV-debug.apk")
 }
+
+tasks.register("copyAllApks") {
+  description = "Copia os APKs para as pastas apk/mobile e apk/tv"
+  dependsOn("copyMobileApk", "copyTvApk")
+}
+
+tasks.matching { it.name == "assembleDebug" }.configureEach {
+  finalizedBy("copyAllApks")
+}
+
 
 

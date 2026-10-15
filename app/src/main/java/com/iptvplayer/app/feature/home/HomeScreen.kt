@@ -73,6 +73,7 @@ import coil.compose.AsyncImage
 import com.iptvplayer.app.core.database.AppDatabase
 import com.iptvplayer.app.core.database.model.ContentType
 import com.iptvplayer.app.core.designsystem.components.YouTubeProgressBar
+import com.iptvplayer.app.core.designsystem.components.tvFocusable
 import com.iptvplayer.app.core.designsystem.theme.DarkBackground
 import com.iptvplayer.app.core.designsystem.theme.DarkSurface
 import com.iptvplayer.app.core.designsystem.theme.DarkSurfaceVariant
@@ -524,6 +525,7 @@ fun HomeScreen(
                             Card(
                                 modifier = Modifier
                                     .width(140.dp)
+                                    .tvFocusable(shape = RoundedCornerShape(10.dp))
                                     .clickable {
                                         onPlayItem(channel.id, channel.name, channel.streamUrl, false, 0L)
                                     },
@@ -612,6 +614,7 @@ fun HomeScreen(
                             Card(
                                 modifier = Modifier
                                     .width(180.dp)
+                                    .tvFocusable(shape = RoundedCornerShape(10.dp))
                                     .clickable {
                                         onPlayItem(dl.id, dl.title, dl.sourceUrl, true, 0L)
                                     },
@@ -691,6 +694,7 @@ private fun MinimalContinueWatchingCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .tvFocusable(shape = RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
             .clickable { onResumeClick() },
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
@@ -829,6 +833,7 @@ private fun MinimalContinueWatchingCard(
                 Box(
                     modifier = Modifier
                         .size(32.dp)
+                        .tvFocusable(shape = CircleShape, focusedScale = 1.15f)
                         .clip(CircleShape)
                         .background(DarkSurfaceVariant)
                         .clickable { onRestartClick() },
@@ -846,6 +851,7 @@ private fun MinimalContinueWatchingCard(
                 Box(
                     modifier = Modifier
                         .size(32.dp)
+                        .tvFocusable(shape = CircleShape, focusedScale = 1.15f)
                         .clip(CircleShape)
                         .background(DarkSurfaceVariant)
                         .clickable { onRemoveClick() },
@@ -874,6 +880,7 @@ private fun QuickCategoryCard(
 ) {
     Card(
         modifier = modifier
+            .tvFocusable(shape = RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
