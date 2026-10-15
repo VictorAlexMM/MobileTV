@@ -57,13 +57,17 @@ import com.iptvplayer.app.feature.playlists.PlaylistRepository
 import com.iptvplayer.app.feature.playlists.PlaylistsScreen
 import com.iptvplayer.app.feature.settings.SettingsScreen
 import com.iptvplayer.app.feature.vod.VodScreen
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.VideoLibrary
+import com.iptvplayer.app.feature.series.SeriesScreen
 import kotlinx.coroutines.launch
 
 enum class AppDestination(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    LIVE("Ao Vivo", Icons.Default.LiveTv),
+    LIVE("Canais", Icons.Default.LiveTv),
     MOVIES("Filmes", Icons.Default.Movie),
+    SERIES("Séries", Icons.Default.VideoLibrary),
+    PLAYLISTS("Playlists", Icons.AutoMirrored.Filled.PlaylistPlay),
     DOWNLOADS("Downloads", Icons.Default.Download),
-    PLAYLISTS("Playlists", Icons.Default.PlaylistPlay),
     SETTINGS("Ajustes", Icons.Default.Settings)
 }
 
@@ -124,6 +128,17 @@ fun MainApp(
                                     tint = if (offlineModeEnabled) StatusWarningAmber else Color.White
                                 )
                             }
+
+                            // Botão de Ajustes / Configurações
+                            IconButton(
+                                onClick = { currentDestination = AppDestination.SETTINGS }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "Ajustes",
+                                    tint = if (currentDestination == AppDestination.SETTINGS) PrimaryIndigo else Color.White
+                                )
+                            }
                         }
                     )
 
@@ -143,7 +158,7 @@ fun MainApp(
                     containerColor = DarkSurface,
                     contentColor = Color.White
                 ) {
-                    AppDestination.entries.forEach { dest ->
+                    AppDestination.entries.filter { it != AppDestination.SETTINGS }.forEach { dest ->
                         NavigationBarItem(
                             selected = currentDestination == dest,
                             onClick = { currentDestination = dest },
@@ -210,6 +225,28 @@ fun MainApp(
                                 snackbarHostState = snackbarHostState
                             )
                         }
+                        AppDestination.SERIES -> {
+                            SeriesScreen(
+                                repository = channelRepository,
+                                downloadController = downloadController,
+                                activePlaylistId = activePlaylistId,
+                                isOfflineMode = isAppOffline,
+                                onPlaySeries = { series, isDownloaded ->
+                                    playerEngine.playContent(
+                                        contentId = series.id,
+                                        title = series.name,
+                                        streamUrl = series.streamUrl,
+                                        isHls = series.streamUrl.contains(".m3u8", ignoreCase = true),
+                                        isDownloaded = isDownloaded
+                                    )
+                                    isPlayingFullscreen = true
+                                },
+                                onEnableOnlineMode = {
+                                    scope.launch { settingsRepository.setOfflineMode(false) }
+                                },
+                                snackbarHostState = snackbarHostState
+                            )
+                        }
                         AppDestination.DOWNLOADS -> {
                             DownloadsScreen(
                                 database = database,
@@ -234,7 +271,8 @@ fun MainApp(
                                     scope.launch {
                                         settingsRepository.setActivePlaylistId(id)
                                     }
-                                }
+                                },
+                                snackbarHostState = snackbarHostState
                             )
                         }
                         AppDestination.SETTINGS -> {

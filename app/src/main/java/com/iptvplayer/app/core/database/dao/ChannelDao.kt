@@ -10,10 +10,34 @@ import com.iptvplayer.app.core.database.entity.ChannelEntity
 import com.iptvplayer.app.core.database.model.ContentType
 import kotlinx.coroutines.flow.Flow
 
+data class CategoryCount(
+    val category: String,
+    val count: Int
+)
+
 @Dao
 interface ChannelDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChannels(channels: List<ChannelEntity>)
+
+    /**
+     * Busca paginada unificada com isolamento estrito por ContentType (LIVE, MOVIE, SERIES).
+     * Suporta filtro opcional por playlist, por categoria e busca textual em tempo real.
+     */
+    @Query("""
+        SELECT * FROM channels 
+        WHERE (:playlistId IS NULL OR playlistId = :playlistId)
+          AND contentType = :contentType
+          AND (:category IS NULL OR groupTitle = :category)
+          AND (:query = '' OR name LIKE '%' || :query || '%')
+        ORDER BY name ASC
+    """)
+    fun getChannelsFilteredPaged(
+        playlistId: Long?,
+        contentType: ContentType,
+        category: String?,
+        query: String
+    ): PagingSource<Int, ChannelEntity>
 
     @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND contentType = :contentType ORDER BY name ASC")
     fun getChannelsPaged(playlistId: Long, contentType: ContentType): PagingSource<Int, ChannelEntity>
@@ -28,8 +52,44 @@ interface ChannelDao {
     @Query("SELECT * FROM channels WHERE name LIKE '%' || :query || '%' ORDER BY name ASC")
     fun searchChannelsPaged(query: String): PagingSource<Int, ChannelEntity>
 
-    @Query("SELECT DISTINCT groupTitle FROM channels WHERE playlistId = :playlistId AND contentType = :contentType AND groupTitle IS NOT NULL ORDER BY groupTitle ASC")
-    fun getCategories(playlistId: Long, contentType: ContentType): Flow<List<String>>
+    /**
+     * Categorias com contagem de itens por ContentType, ordenadas pelas mais populares primeiro.
+     */
+    @Query("""
+        SELECT groupTitle AS category, COUNT(*) AS count
+        FROM channels
+        WHERE (:playlistId IS NULL OR playlistId = :playlistId)
+          AND contentType = :contentType
+          AND groupTitle IS NOT NULL
+        GROUP BY groupTitle
+        ORDER BY count DESC, groupTitle ASC
+    """)
+    fun getCategoriesWithCount(
+        playlistId: Long?,
+        contentType: ContentType
+    ): Flow<List<CategoryCount>>
+
+    @Query("""
+        SELECT DISTINCT groupTitle FROM channels 
+        WHERE (:playlistId IS NULL OR playlistId = :playlistId) 
+          AND contentType = :contentType 
+          AND groupTitle IS NOT NULL 
+        ORDER BY groupTitle ASC
+    """)
+    fun getCategories(
+        playlistId: Long?,
+        contentType: ContentType
+    ): Flow<List<String>>
+
+    @Query("""
+        SELECT COUNT(*) FROM channels 
+        WHERE (:playlistId IS NULL OR playlistId = :playlistId) 
+          AND contentType = :contentType
+    """)
+    fun getTotalCountByType(
+        playlistId: Long?,
+        contentType: ContentType
+    ): Flow<Int>
 
     @Query("SELECT * FROM channels WHERE isFavorite = 1 ORDER BY name ASC")
     fun getFavoriteChannels(): Flow<List<ChannelEntity>>

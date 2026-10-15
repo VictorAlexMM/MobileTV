@@ -59,11 +59,12 @@ fun ChannelCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
             .clickable(onClick = onCardClick),
         colors = CardDefaults.cardColors(
             containerColor = DarkSurfaceVariant.copy(alpha = alpha)
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(14.dp)
     ) {
         Row(
             modifier = Modifier
@@ -76,8 +77,8 @@ fun ChannelCard(
             Box(
                 modifier = Modifier
                     .size(54.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.Black.copy(alpha = 0.3f)),
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color.Black.copy(alpha = 0.35f)),
                 contentAlignment = Alignment.Center
             ) {
                 if (!channel.logoUrl.isNullOrBlank()) {
@@ -89,10 +90,14 @@ fun ChannelCard(
                     )
                 } else {
                     Icon(
-                        imageVector = Icons.Default.Tv,
+                        imageVector = when (channel.contentType) {
+                            ContentType.LIVE -> Icons.Default.Tv
+                            ContentType.MOVIE -> Icons.Default.PlayArrow
+                            ContentType.SERIES, ContentType.EPISODE -> Icons.Default.Tv
+                        },
                         contentDescription = null,
                         tint = TextMutedDark,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(26.dp)
                     )
                 }
 
@@ -124,6 +129,7 @@ fun ChannelCard(
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     ),
+                    color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -132,12 +138,32 @@ fun ChannelCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    // Badge de Tipo de Conteúdo
+                    val (badgeText, badgeColor) = when (channel.contentType) {
+                        ContentType.LIVE -> Pair("AO VIVO", Color(0xFFEF4444))
+                        ContentType.MOVIE -> Pair("FILME", PrimaryIndigo)
+                        ContentType.SERIES, ContentType.EPISODE -> Pair("SÉRIE", Color(0xFF8B5CF6))
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(badgeColor.copy(alpha = 0.15f))
+                            .padding(horizontal = 5.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = badgeText,
+                            color = badgeColor,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
                     channel.groupTitle?.let { group ->
                         Text(
                             text = group,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = TextMutedDark,
-                                fontSize = 12.sp
+                                fontSize = 11.sp
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis

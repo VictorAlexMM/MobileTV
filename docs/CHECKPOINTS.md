@@ -16,6 +16,8 @@
 | **CP-05** | Motor de Download e Cache Offline (Media3 DownloadService + CacheDataSource) | **Aprovado** | 2026-10-14 |
 | **CP-06** | Interface Compose & Navegação (Playlists, Player, VOD, Downloads, Configs) | **Aprovado** | 2026-10-14 |
 | **CP-07** | Validação dos Critérios de Aceitação da Especificação (Online & Offline) | **Aprovado** | 2026-10-14 |
+| **CP-08** | Ícone Oficial, Reinstalação Contínua ADB e Compatibilidade Room KSP | **Aprovado** | 2026-10-14 |
+| **CP-09** | Separação de Conteúdo (Ao Vivo, Filmes, Séries) & Base IPTVnator | **Em Andamento** | 2026-10-14 |
 
 ---
 
@@ -119,3 +121,25 @@
   - [x] Queda de conexão física ativa modo offline automático.
   - [x] Progresso compartilhado via `WatchProgressEntity` entre online e offline.
 - **Resultado**: APROVADO.
+
+---
+
+### CP-08: Ícone Oficial, Reinstalação Contínua ADB e Compatibilidade Room KSP
+- **Objetivo**: Fornecer identidade visual oficial via `docs/icon.jpg`, resolver crash de inicialização no Android Studio e habilitar reinstalação contínua nos testes físicos.
+- **Critérios de Validação**:
+  - [x] Ícone processado em todas as resoluções mipmap (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) com ícone adaptativo e ícone redondo.
+  - [x] Configuração no Android Studio (`.idea/runConfigurations/app.xml`) garantindo atualização automática a cada clique em Run.
+  - [x] Resolução do crash de geração do Room KSP para Kotlin 2.3+.
+  - [x] Instalação e execução validadas no Samsung Galaxy S23 Ultra (`samsung SM-S918B`).
+- **Resultado**: APROVADO.
+
+---
+
+### CP-09: Separação de Conteúdo (Ao Vivo, Filmes, Séries) & Base IPTVnator
+- **Objetivo**: Isolar completamente fluxos de Canais Ao Vivo, Filmes (VOD) e Séries, com extração de categorias completas e busca contextual inspirada no IPTVnator.
+- **Critérios de Validação**:
+  - [x] Adição do tipo `ContentType.SERIES` e criação da tela dedicada `SeriesScreen.kt`.
+  - [x] Extração de categorias em M3U (`group-title`, `tvg-group`, `#EXTGRP:`) e Xtream API (`getLiveCategories`, `getVodCategories`, `getSeriesCategories`).
+  - [x] DAO `ChannelDao` estruturado com queries que isolam `contentType`, associam contadores por categoria e evitam vazamento de canais entre abas.
+  - [x] Diálogo de playlists aprimorado com validação, indicador inline e confirmação visual.
+- **Resultado**: EM ANDAMENTO (Compilação verificada, pronto para continuação e refinamento).

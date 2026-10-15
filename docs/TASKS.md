@@ -124,3 +124,19 @@
 - [x] **TASK-503**: Testes unitários para [M3UParserTest.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/test/java/com/iptvplayer/app/parser/M3UParserTest.kt) e [NetworkGateTest.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/test/java/com/iptvplayer/app/network/NetworkGateTest.kt) (100% passando).
 - [x] **TASK-504**: Testes dos fluxos de offline manual e online permitidos.
 - [x] **TASK-505**: Validação final de build (`assembleDebug` gerando `app-debug.apk` com 27MB).
+
+---
+
+## Fase 6 — Melhorias UI/UX, Ícone, Separação Estrita (Ao Vivo / Filmes / Séries) & Base IPTVnator
+
+- [x] **TASK-601**: Novo Ícone oficial do aplicativo gerado a partir de `docs/icon.jpg` em todas as densidades mipmap (mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi) com suporte a adaptive icon e round icon.
+- [x] **TASK-602**: Correção do popup de adição de Playlist: validação de campos obrigatórios, loading animado inline, fechamento automático após conclusão e feedback instantâneo via Snackbar.
+- [x] **TASK-603**: Configuração de Run no Android Studio (`.idea/runConfigurations/app.xml`) com `ALWAYS_INSTALL_WITH_PM` e `PM_INSTALL_OPTIONS = -r -t` para deploy automático no celular conectado.
+- [x] **TASK-604**: Migração de compilação Room para KSP 2.3.12 compatível com Kotlin 2.3 e AGP 9.
+- [x] **TASK-605**: Separação de conteúdo inspirada no IPTVnator (`4gray/iptvnator`):
+  - Modelagem e categorização estrita em `ContentType.LIVE`, `ContentType.MOVIE` e `ContentType.SERIES`.
+  - Queries Room (`ChannelDao`) com suporte a busca textual, filtro de categoria e playlist ativa sem vazamento de tipos entre abas.
+  - Consulta de categorias com contadores por tipo de mídia (`CategoryCount`).
+  - Nova aba e tela dedicada de Séries (`SeriesScreen.kt`).
+  - Modal sheets minimalistas para seleção de categorias com visualização de quantidade de canais/mídias.
+- [/] **TASK-606**: Refinamento da busca global e sincronização automática da playlist ativa no primeiro carregamento.

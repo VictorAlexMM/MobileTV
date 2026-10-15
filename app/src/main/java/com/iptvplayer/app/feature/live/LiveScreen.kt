@@ -1,17 +1,26 @@
 package com.iptvplayer.app.feature.live
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -30,7 +39,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.iptvplayer.app.core.database.entity.ChannelEntity
@@ -41,6 +54,7 @@ import com.iptvplayer.app.core.designsystem.components.GoOnlineDialog
 import com.iptvplayer.app.core.designsystem.theme.PrimaryIndigo
 import kotlinx.coroutines.launch
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun LiveScreen(
     repository: ChannelRepository,
@@ -73,25 +87,50 @@ fun LiveScreen(
         }
     }.collectAsLazyPagingItems()
 
+    var showCategorySheet by remember { mutableStateOf(false) }
+
     Column(modifier = modifier.fillMaxSize()) {
         // Campo de busca
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = { Text("Buscar canais ao vivo...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { searchQuery = "" }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Limpar busca")
-                    }
-                }
-            },
-            singleLine = true,
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Buscar canais ao vivo...", color = com.iptvplayer.app.core.designsystem.theme.TextMutedDark, fontSize = 14.sp) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = com.iptvplayer.app.core.designsystem.theme.TextMutedDark) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Limpar busca", tint = com.iptvplayer.app.core.designsystem.theme.TextMutedDark)
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.weight(1f)
+            )
+
+            if (categories.isNotEmpty()) {
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(start = 8.dp))
+                IconButton(
+                    onClick = { showCategorySheet = true },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (selectedCategory != null) PrimaryIndigo.copy(alpha = 0.2f) else com.iptvplayer.app.core.designsystem.theme.DarkSurface)
+                ) {
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Default.Category,
+                        contentDescription = "Categorias",
+                        tint = if (selectedCategory != null) PrimaryIndigo else Color.White
+                    )
+                }
+            }
+        }
 
         // Carrossel de Categorias
         if (categories.isNotEmpty() && searchQuery.isBlank()) {
@@ -104,10 +143,11 @@ fun LiveScreen(
                     FilterChip(
                         selected = selectedCategory == null,
                         onClick = { selectedCategory = null },
-                        label = { Text("Todos") },
+                        label = { Text("Todos os Canais") },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = PrimaryIndigo
-                        )
+                        ),
+                        shape = RoundedCornerShape(20.dp)
                     )
                 }
                 items(categories) { category ->
@@ -117,7 +157,8 @@ fun LiveScreen(
                         label = { Text(category) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = PrimaryIndigo
-                        )
+                        ),
+                        shape = RoundedCornerShape(20.dp)
                     )
                 }
             }
@@ -125,64 +166,163 @@ fun LiveScreen(
 
         // Lista de Canais Paginada
         Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(
-                    count = channelsPaging.itemCount,
-                    key = { index -> channelsPaging[index]?.id ?: index }
-                ) { index ->
-                    val channel = channelsPaging[index]
-                    if (channel != null) {
-                        ChannelCard(
-                            channel = channel,
-                            isOfflineMode = isOfflineMode,
-                            downloadStatus = null, // Canais ao vivo não têm download estático, apenas gravações
-                            onCardClick = {
-                                if (isOfflineMode) {
-                                    pendingChannelToPlay = channel
-                                    showGoOnlineDialog = true
-                                } else {
-                                    onPlayChannel(channel)
-                                }
-                            },
-                            onFavoriteToggle = {
-                                scope.launch {
-                                    repository.toggleFavorite(channel.id, channel.isFavorite)
-                                }
-                            },
-                            onDownloadClick = {}
-                        )
-                    }
+            if (activePlaylistId == null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Default.LiveTv,
+                        contentDescription = null,
+                        tint = com.iptvplayer.app.core.designsystem.theme.TextMutedDark,
+                        modifier = Modifier.size(56.dp)
+                    )
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Nenhuma playlist ativa",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White
+                    )
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Adicione ou selecione uma playlist na aba Playlists para carregar os canais.",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = com.iptvplayer.app.core.designsystem.theme.TextMutedDark),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
                 }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(
+                        count = channelsPaging.itemCount,
+                        key = { index -> channelsPaging[index]?.id ?: index }
+                    ) { index ->
+                        val channel = channelsPaging[index]
+                        if (channel != null) {
+                            ChannelCard(
+                                channel = channel,
+                                isOfflineMode = isOfflineMode,
+                                downloadStatus = null,
+                                onCardClick = {
+                                    if (isOfflineMode) {
+                                        pendingChannelToPlay = channel
+                                        showGoOnlineDialog = true
+                                    } else {
+                                        onPlayChannel(channel)
+                                    }
+                                },
+                                onFavoriteToggle = {
+                                    scope.launch {
+                                        repository.toggleFavorite(channel.id, channel.isFavorite)
+                                    }
+                                },
+                                onDownloadClick = {}
+                            )
+                        }
+                    }
 
-                if (channelsPaging.loadState.append is LoadState.Loading) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = PrimaryIndigo)
+                    if (channelsPaging.loadState.append is LoadState.Loading) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = PrimaryIndigo)
+                            }
                         }
                     }
                 }
-            }
 
-            if (channelsPaging.loadState.refresh is LoadState.Loading) {
-                CircularProgressIndicator(
-                    color = PrimaryIndigo,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            } else if (channelsPaging.itemCount == 0 && activePlaylistId != null) {
+                if (channelsPaging.loadState.refresh is LoadState.Loading) {
+                    CircularProgressIndicator(
+                        color = PrimaryIndigo,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                } else if (channelsPaging.itemCount == 0) {
+                    Text(
+                        text = if (searchQuery.isNotBlank()) "Nenhum canal encontrado para \"$searchQuery\"." else "Nenhum canal ao vivo encontrado nesta categoria.",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = com.iptvplayer.app.core.designsystem.theme.TextMutedDark),
+                        modifier = Modifier.align(Alignment.Center),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+
+    if (showCategorySheet) {
+        val sheetState = androidx.compose.material3.rememberModalBottomSheetState()
+        androidx.compose.material3.ModalBottomSheet(
+            onDismissRequest = { showCategorySheet = false },
+            sheetState = sheetState,
+            containerColor = com.iptvplayer.app.core.designsystem.theme.DarkSurface
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
                 Text(
-                    text = "Nenhum canal ao vivo encontrado.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.align(Alignment.Center)
+                    text = "Categorias de Canais (${categories.size})",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White
                 )
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
+
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.height(350.dp)
+                ) {
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (selectedCategory == null) PrimaryIndigo.copy(alpha = 0.2f) else Color.Transparent)
+                                .clickable {
+                                    selectedCategory = null
+                                    showCategorySheet = false
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Todos os Canais",
+                                color = if (selectedCategory == null) PrimaryIndigo else Color.White,
+                                fontWeight = if (selectedCategory == null) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                    items(categories) { cat ->
+                        val isSelected = selectedCategory == cat
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) PrimaryIndigo.copy(alpha = 0.2f) else Color.Transparent)
+                                .clickable {
+                                    selectedCategory = cat
+                                    showCategorySheet = false
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = cat,
+                                color = if (isSelected) PrimaryIndigo else Color.White,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
             }
         }
     }

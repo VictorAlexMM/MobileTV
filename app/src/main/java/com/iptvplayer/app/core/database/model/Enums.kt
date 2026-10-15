@@ -10,7 +10,8 @@ enum class PlaylistType {
 enum class ContentType {
     LIVE,
     MOVIE,
-    EPISODE
+    EPISODE,
+    SERIES
 }
 
 enum class DownloadStatus {

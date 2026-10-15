@@ -2,6 +2,7 @@ plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
+  alias(libs.plugins.ksp)
 }
 
 android {
@@ -75,7 +76,7 @@ dependencies {
   implementation(libs.androidx.room.runtime)
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.paging)
-  annotationProcessor("androidx.room:room-compiler:2.6.1")
+  ksp(libs.androidx.room.compiler)
 
   // Paging 3
   implementation(libs.androidx.paging.runtime)

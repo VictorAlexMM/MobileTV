@@ -9,10 +9,11 @@ import java.security.MessageDigest
 
 object M3UParser {
 
-    private val TVG_ID_REGEX = """tvg-id="([^"]*)"""".toRegex()
-    private val TVG_NAME_REGEX = """tvg-name="([^"]*)"""".toRegex()
-    private val TVG_LOGO_REGEX = """tvg-logo="([^"]*)"""".toRegex()
-    private val GROUP_TITLE_REGEX = """group-title="([^"]*)"""".toRegex()
+    private val TVG_ID_REGEX = """tvg-id=["']?([^"']*)["']?""".toRegex(RegexOption.IGNORE_CASE)
+    private val TVG_NAME_REGEX = """tvg-name=["']?([^"']*)["']?""".toRegex(RegexOption.IGNORE_CASE)
+    private val TVG_LOGO_REGEX = """tvg-logo=["']?([^"']*)["']?""".toRegex(RegexOption.IGNORE_CASE)
+    private val GROUP_TITLE_REGEX = """(?:group-title|tvg-group)=["']?([^"']*)["']?""".toRegex(RegexOption.IGNORE_CASE)
+    private val EXTGRP_REGEX = """#EXTGRP:\s*(.+)""".toRegex(RegexOption.IGNORE_CASE)
 
     /**
      * Faz o parsing de um stream M3U em blocos (batching), permitindo processar
@@ -52,19 +53,26 @@ object M3UParser {
                     } else {
                         currentTvgName ?: "Canal Desconhecido"
                     }
+                } else if (trimmed.startsWith("#EXTGRP:", ignoreCase = true)) {
+                    val group = EXTGRP_REGEX.find(trimmed)?.groupValues?.get(1)?.trim()?.ifBlank { null }
+                    if (group != null) {
+                        currentGroupTitle = group
+                    }
                 } else if (!trimmed.startsWith("#")) {
                     // É uma URL de stream
                     val streamUrl = trimmed
-                    val name = currentChannelName ?: currentTvgName ?: "Canal Desconhecido"
+                    val rawName = currentChannelName ?: currentTvgName ?: "Canal Desconhecido"
+                    val cleanName = cleanHtml(rawName)
                     val channelId = generateChannelId(playlistId, streamUrl)
-                    val contentType = inferContentType(streamUrl, currentGroupTitle)
+                    val contentType = inferContentType(streamUrl, currentGroupTitle, cleanName)
+                    val resolvedCategory = resolveCategory(currentGroupTitle, contentType, cleanName)
 
                     val channel = ChannelEntity(
                         id = channelId,
                         playlistId = playlistId,
-                        name = name,
+                        name = cleanName,
                         logoUrl = currentLogoUrl,
-                        groupTitle = currentGroupTitle ?: "Geral",
+                        groupTitle = resolvedCategory,
                         streamUrl = streamUrl,
                         tvgId = currentTvgId,
                         contentType = contentType,
@@ -103,18 +111,54 @@ object M3UParser {
         return bytes.joinToString("") { "%02x".format(it) }
     }
 
-    private fun inferContentType(url: String, groupTitle: String?): ContentType {
+    private fun inferContentType(url: String, groupTitle: String?, name: String): ContentType {
         val lowerUrl = url.lowercase()
         val lowerGroup = groupTitle?.lowercase() ?: ""
+        val lowerName = name.lowercase()
 
         return when {
-            lowerUrl.contains("/movie/") || lowerGroup.contains("filme") || lowerGroup.contains("movie") || lowerGroup.contains("vod") -> {
+            lowerUrl.contains("/movie/") || lowerGroup.contains("filme") || lowerGroup.contains("movie") || lowerGroup.contains("vod") || lowerName.contains("filme") -> {
                 ContentType.MOVIE
             }
-            lowerUrl.contains("/series/") || lowerGroup.contains("serie") || lowerGroup.contains("série") || lowerGroup.contains("episod") -> {
-                ContentType.EPISODE
+            lowerUrl.contains("/series/") || lowerGroup.contains("serie") || lowerGroup.contains("série") || lowerGroup.contains("temporada") || lowerGroup.contains("season") || lowerName.contains("s0") || lowerName.contains("s1") || lowerName.contains("ep ") || lowerName.contains("episod") -> {
+                ContentType.SERIES
             }
             else -> ContentType.LIVE
         }
+    }
+
+    private fun resolveCategory(groupTitle: String?, contentType: ContentType, name: String): String {
+        if (!groupTitle.isNullOrBlank()) {
+            return groupTitle.trim()
+        }
+
+        // Tenta inferir categoria pelo prefixo do nome do canal (ex: "BR | GLOBO", "[FILMES] AVATAR")
+        val pipeIndex = name.indexOf('|')
+        if (pipeIndex in 2..20) {
+            val prefix = name.substring(0, pipeIndex).trim()
+            if (prefix.isNotEmpty() && !prefix.contains("http")) return prefix
+        }
+
+        val colonIndex = name.indexOf(':')
+        if (colonIndex in 2..20) {
+            val prefix = name.substring(0, colonIndex).trim()
+            if (prefix.isNotEmpty() && !prefix.contains("http")) return prefix
+        }
+
+        return when (contentType) {
+            ContentType.MOVIE -> "Filmes Gerais"
+            ContentType.SERIES, ContentType.EPISODE -> "Séries Gerais"
+            ContentType.LIVE -> "Canais Gerais"
+        }
+    }
+
+    private fun cleanHtml(text: String): String {
+        return text
+            .replace("&amp;", "&")
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .trim()
     }
 }
