@@ -409,6 +409,10 @@
   - Configuração das tasks `copyTvApk` e `copyAllApks` em [app/build.gradle.kts](file:///c:/Users/victor.mota/Desktop/New/app/app/build.gradle.kts) vinculadas ao ciclo `assembleDebug`.
   - Geração de `apk/tv/MobileTV-TV-debug.apk` e documentação detalhada com métodos de instalação (Wi-Fi ADB, pendrive USB e Send Files to TV) em [apk/tv/README.md](file:///c:/Users/victor.mota/Desktop/New/app/apk/tv/README.md).
 - [x] **TASK-2006**: Validação com testes unitários (`testDebugUnitTest` 100% aprovados) e compilação do APK de TV com sucesso.
+- [x] **TASK-2007**: Disponibilização do APK diretamente na raiz da pasta [apk/](file:///c:/Users/victor.mota/Desktop/New/app/apk):
+  - Configuração da task `copyRootApk` em [app/build.gradle.kts](file:///c:/Users/victor.mota/Desktop/New/app/app/build.gradle.kts) para copiar automaticamente o APK recém-gerado para a raiz da pasta `apk/` como [MobileTV.apk](file:///c:/Users/victor.mota/Desktop/New/app/apk/MobileTV.apk).
+  - Disponibilização de cópias adicionais [app-debug.apk](file:///c:/Users/victor.mota/Desktop/New/app/apk/app-debug.apk) e [MobileTV-latest.apk](file:///c:/Users/victor.mota/Desktop/New/app/apk/MobileTV-latest.apk).
+  - Unificação do fluxo de cópia automática na task `copyAllApks` (raiz `apk/`, `apk/mobile/` e `apk/tv/`).
 
 
 
