@@ -56,9 +56,10 @@ class PlayerEngine(
 
     private fun createPlayer(): ExoPlayer {
         val dataSourceFactory = DownloadModule.buildPlaybackDataSourceFactory(context, networkGate)
-        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+        val mediaSourceFactory = DefaultMediaSourceFactory(context.applicationContext)
+            .setDataSourceFactory(dataSourceFactory)
 
-        val player = ExoPlayer.Builder(context)
+        val player = ExoPlayer.Builder(context.applicationContext)
             .setMediaSourceFactory(mediaSourceFactory)
             .build()
 
@@ -89,6 +90,7 @@ class PlayerEngine(
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                android.util.Log.e("PlayerEngine", "Falha na reprodução de $currentContentId: [${error.errorCodeName}] ${error.message}", error)
                 _uiState.value = _uiState.value.copy(
                     errorMessage = error.localizedMessage ?: "Erro na reprodução"
                 )
@@ -109,21 +111,55 @@ class PlayerEngine(
         currentContentId = contentId
         val player = getPlayer()
 
-        val mediaItemBuilder = MediaItem.Builder()
-            .setMediaId(contentId)
-            .setUri(Uri.parse(streamUrl))
-
-        if (isHls || streamUrl.contains(".m3u8", ignoreCase = true)) {
-            mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+        // 1. Tenta obter o MediaItem oficial a partir do DownloadManager se estiver concluído no disco
+        val downloadManager = DownloadModule.getDownloadManager(context)
+        val completedDownload = try {
+            val d = downloadManager.downloadIndex.getDownload(contentId)
+            if (d != null && d.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED && d.bytesDownloaded > 0L) {
+                d
+            } else null
+        } catch (_: Exception) {
+            null
         }
 
-        val mediaItem = mediaItemBuilder.build()
+        val mediaItem = if (completedDownload != null) {
+            completedDownload.request.toMediaItem().buildUpon()
+                .setMediaMetadata(
+                    androidx.media3.common.MediaMetadata.Builder()
+                        .setTitle(title)
+                        .build()
+                )
+                .build()
+        } else {
+            val mediaItemBuilder = MediaItem.Builder()
+                .setMediaId(contentId)
+                .setUri(Uri.parse(streamUrl))
+                .setCustomCacheKey(streamUrl)
+                .setMediaMetadata(
+                    androidx.media3.common.MediaMetadata.Builder()
+                        .setTitle(title)
+                        .build()
+                )
+
+            val mimeType = when {
+                isHls || streamUrl.contains(".m3u8", ignoreCase = true) -> MimeTypes.APPLICATION_M3U8
+                streamUrl.contains(".mpd", ignoreCase = true) -> MimeTypes.APPLICATION_MPD
+                streamUrl.contains(".mp4", ignoreCase = true) -> MimeTypes.VIDEO_MP4
+                streamUrl.contains(".mkv", ignoreCase = true) -> MimeTypes.VIDEO_MATROSKA
+                streamUrl.contains(".ts", ignoreCase = true) -> MimeTypes.VIDEO_MP2T
+                else -> null
+            }
+            if (mimeType != null) {
+                mediaItemBuilder.setMimeType(mimeType)
+            }
+            mediaItemBuilder.build()
+        }
 
         _uiState.value = _uiState.value.copy(
             contentId = contentId,
             streamUrl = streamUrl,
             contentTitle = title,
-            isOfflinePlayback = isDownloaded || !networkGate.canAccessNetwork(),
+            isOfflinePlayback = isDownloaded || (completedDownload != null) || !networkGate.canAccessNetwork(),
             errorMessage = null
         )
 

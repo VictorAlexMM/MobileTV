@@ -44,18 +44,27 @@ class DownloadController(
                 finalException: Exception?
             ) {
                 scope.launch {
-                    val status = mapMedia3Status(download.state)
                     val bytes = download.bytesDownloaded
                     val total = download.contentLength
-                    val percent = if (download.state == Download.STATE_COMPLETED) {
-                        100f
-                    } else if (download.percentDownloaded != -1f && download.percentDownloaded > 0f) {
-                        download.percentDownloaded
-                    } else if (total > 0) {
-                        ((bytes.toDouble() / total.toDouble()) * 100.0).toFloat().coerceIn(0f, 100f)
-                    } else 0f
+                    val isZeroByteCompleted = download.state == Download.STATE_COMPLETED && bytes == 0L
 
-                    val errorMsg = finalException?.localizedMessage
+                    val status = when {
+                        isZeroByteCompleted -> DownloadStatus.FAILED
+                        else -> mapMedia3Status(download.state)
+                    }
+
+                    val percent = when {
+                        isZeroByteCompleted -> 0f
+                        status == DownloadStatus.COMPLETED -> 100f
+                        download.percentDownloaded != -1f && download.percentDownloaded > 0f -> download.percentDownloaded
+                        total > 0 -> ((bytes.toDouble() / total.toDouble()) * 100.0).toFloat().coerceIn(0f, 100f)
+                        else -> 0f
+                    }
+
+                    val errorMsg = when {
+                        isZeroByteCompleted -> "O servidor finalizou a conexão sem enviar dados."
+                        else -> finalException?.localizedMessage
+                    }
 
                     database.downloadDao().updateProgress(
                         id = download.request.id,
@@ -111,23 +120,30 @@ class DownloadController(
                 for (d in activeDownloads) {
                     val bytes = d.bytesDownloaded
                     val total = d.contentLength
-                    val percent = if (d.state == Download.STATE_COMPLETED) {
-                        100f
-                    } else if (d.percentDownloaded != -1f && d.percentDownloaded > 0f) {
-                        d.percentDownloaded
-                    } else if (total > 0) {
-                        ((bytes.toDouble() / total.toDouble()) * 100.0).toFloat().coerceIn(0f, 100f)
-                    } else {
-                        0f
+                    val isZeroByteCompleted = d.state == Download.STATE_COMPLETED && bytes == 0L
+
+                    val status = when {
+                        isZeroByteCompleted -> DownloadStatus.FAILED
+                        else -> mapMedia3Status(d.state)
                     }
+
+                    val percent = when {
+                        isZeroByteCompleted -> 0f
+                        d.state == Download.STATE_COMPLETED -> 100f
+                        d.percentDownloaded != -1f && d.percentDownloaded > 0f -> d.percentDownloaded
+                        total > 0 -> ((bytes.toDouble() / total.toDouble()) * 100.0).toFloat().coerceIn(0f, 100f)
+                        else -> 0f
+                    }
+
+                    val errorMsg = if (isZeroByteCompleted) "O servidor finalizou a conexão sem enviar dados." else null
 
                     database.downloadDao().updateProgress(
                         id = d.request.id,
                         bytesDownloaded = bytes,
                         totalBytes = total,
                         percent = percent,
-                        status = mapMedia3Status(d.state),
-                        errorMessage = null
+                        status = status,
+                        errorMessage = errorMsg
                     )
                 }
             }
@@ -157,9 +173,10 @@ class DownloadController(
         )
         database.downloadDao().insertOrUpdate(entity)
 
-        // 3. Montagem da requisição Media3 com MIME Type apropriado
+        // 3. Montagem da requisição Media3 com MIME Type apropriado e customCacheKey garantida
         val uri = Uri.parse(sourceUrl)
         val requestBuilder = DownloadRequest.Builder(contentId, uri)
+            .setCustomCacheKey(sourceUrl)
 
         val mimeType = when {
             sourceUrl.contains(".m3u8", ignoreCase = true) -> MimeTypes.APPLICATION_M3U8

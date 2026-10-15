@@ -41,9 +41,15 @@ object DownloadModule {
     @Synchronized
     fun getDownloadCache(context: Context): Cache {
         return downloadCache ?: run {
-            val downloadDir = File(context.applicationContext.getExternalFilesDir(null), "downloads")
+            val appCtx = context.applicationContext
+            val externalDir = appCtx.getExternalFilesDir(null)
+            val downloadDir = if (externalDir != null) {
+                File(externalDir, "downloads")
+            } else {
+                File(appCtx.filesDir, "downloads")
+            }
             if (!downloadDir.exists()) downloadDir.mkdirs()
-            val db = getDatabaseProvider(context)
+            val db = getDatabaseProvider(appCtx)
             SimpleCache(downloadDir, NoOpCacheEvictor(), db).also {
                 downloadCache = it
             }
@@ -80,27 +86,35 @@ object DownloadModule {
 
     /**
      * Constrói o CacheDataSource.Factory para reprodução de mídia.
-     * Quando onlineAllowed = true: toca do cache se existir; senão, busca na rede.
-     * Quando onlineAllowed = false: lê SOMENTE do cache local, com ZERO tráfego de rede.
+     * Prioriza SEMPRE o cache local se os dados já existirem baixados.
+     * Se houver falha de cache ou streaming misto e a rede estiver permitida,
+     * utiliza o upstream com User-Agent correto e suporte a redirecionamentos.
+     * Quando offline, não trafega dados na rede.
      */
     fun buildPlaybackDataSourceFactory(
         context: Context,
         networkGate: NetworkGate,
         okHttpClient: OkHttpClient = NetworkClient.createOkHttpClient()
     ): DataSource.Factory {
-        val cache = getDownloadCache(context)
-        val isAllowed = networkGate.canAccessNetwork()
+        val appCtx = context.applicationContext
+        val cache = getDownloadCache(appCtx)
+        val httpFactory = getHttpDataSourceFactory(okHttpClient)
+        val defaultUpstreamFactory = DefaultDataSource.Factory(appCtx, httpFactory)
 
-        val upstreamFactory = if (isAllowed) {
-            DefaultDataSource.Factory(context, OkHttpDataSource.Factory(okHttpClient))
-        } else {
-            null // Sem upstream -> leitura 100% offline
+        // Upstream dinâmico: valida se o acesso à rede está liberado antes de abrir conexão
+        val dynamicUpstreamFactory = DataSource.Factory {
+            if (networkGate.canAccessNetwork()) {
+                defaultUpstreamFactory.createDataSource()
+            } else {
+                throw java.io.IOException("Acesso à rede bloqueado em modo offline.")
+            }
         }
 
         return CacheDataSource.Factory()
             .setCache(cache)
-            .setUpstreamDataSourceFactory(upstreamFactory)
+            .setUpstreamDataSourceFactory(dynamicUpstreamFactory)
             .setCacheWriteDataSinkFactory(null) // somente leitura na reprodução
-            .setFlags(if (isAllowed) 0 else CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR.inv())
+            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
     }
 }
+

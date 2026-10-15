@@ -423,7 +423,8 @@ fun SeriesDetailScreen(
                                                     snackbarHostState.showSnackbar("Retomando download...")
                                                 }
                                                 DownloadStatus.COMPLETED -> {
-                                                    snackbarHostState.showSnackbar("Episódio baixado e pronto para assistir offline!")
+                                                    snackbarHostState.showSnackbar("Reproduzindo episódio baixado...")
+                                                    onPlayEpisode(episode.channel, true)
                                                 }
                                                 else -> {
                                                     downloadController.startDownload(

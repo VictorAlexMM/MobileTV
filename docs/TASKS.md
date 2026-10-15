@@ -215,5 +215,26 @@
 - [x] **TASK-1103**: Integração do `NetflixDownloadButton` nos episódios de séries ([SeriesDetailScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesDetailScreen.kt)) e nos cards de filmes ([ChannelCard.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/designsystem/components/ChannelCard.kt)).
 - [x] **TASK-1104**: Testes unitários 100% aprovados, compilação do APK e deploy no Samsung Galaxy S23 Ultra (`SM-S918B`).
 
+---
+
+## Fase 12 — Correção da Abertura/Reprodução de Mídias Baixadas e Validação Estrita de Conclusão
+
+- [x] **TASK-1201**: Refatoração do `CacheDataSource.Factory` em [DownloadModule.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/downloads/DownloadModule.kt):
+  - Injeção obrigatória do `User-Agent` de player no upstream factory para evitar HTTP 403 Forbidden em servidores IPTV.
+  - Implementação de upstream dinâmico que valida permissão de rede em runtime (`networkGate.canAccessNetwork()`) sem travar estaticamente no startup.
+  - Eliminação de flags negativas (`inv()`) inválidas que quebravam o `CacheDataSource`.
+  - Fallback resiliente para diretório de cache (`appCtx.filesDir`) caso `getExternalFilesDir(null)` seja nulo.
+- [x] **TASK-1202**: Reprodução oficial de mídias baixadas via `toMediaItem()` em [PlayerEngine.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/PlayerEngine.kt):
+  - Uso de `download.request.toMediaItem()` para downloads concluídos com bytes válidos no disco, herdando `streamKeys`, MIME type e cache keys exatas.
+  - Vinculação de `DefaultMediaSourceFactory(context.applicationContext)` para detecção de codecs locais.
+  - Resolução precisa de MIME types (`MP4`, `MKV`, `TS`, `HLS`, `DASH`) para streaming online e fallback.
+- [x] **TASK-1203**: Validação estrita de bytes no [DownloadController.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/downloads/DownloadController.kt):
+  - Prevenção contra falsos downloads concluídos com 0 bytes (quando servidores encerram a conexão prematuramente sem dados).
+  - Marcação desses casos como `DownloadStatus.FAILED` com feedback informativo em vez de `COMPLETED`.
+  - Configuração de `customCacheKey = sourceUrl` no `DownloadRequest.Builder`.
+- [x] **TASK-1204**: Ação imediata de reprodução no botão da Netflix em [SeriesDetailScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesDetailScreen.kt) ao clicar em downloads já concluídos (`DownloadStatus.COMPLETED`).
+- [x] **TASK-1205**: Validação com testes unitários 100% aprovados, compilação do APK (`assembleDebug`) e instalação bem-sucedida no Samsung Galaxy S23 Ultra (`SM-S918B`).
+
+
 
 

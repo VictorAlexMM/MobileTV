@@ -258,6 +258,32 @@
     - Totalmente integrado na lista de episódios em `SeriesDetailScreen.kt` e nos cards de filmes em `ChannelCard.kt`.
 - **Consequências**: Downloads de séries e episódios agora fluem continuamente com barra e percentual em tempo real, suporte total a background downloading no Android 12+ sem interrupção do sistema, e feedback estético idêntico à Netflix ao toque do usuário.
 
+---
+
+### ADR-019: Reprodução Oficial de Mídias Baixadas (Media3 CacheDataSource & toMediaItem) e Proteção contra Downloads Vazios
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Após concluir downloads de séries ou filmes, o arquivo não carregava nem abria no player. A investigação revelou três causas estruturais:
+  1. `DownloadModule.buildPlaybackDataSourceFactory` aplicava uma flag negativa inválida (`FLAG_IGNORE_CACHE_ON_ERROR.inv() = -3`) que quebrava o parsing interno de flags do Media3 `CacheDataSource`, e omitia o `User-Agent` de player no upstream factory, gerando bloqueios HTTP 403 Forbidden em requisições de validação.
+  2. `PlayerEngine` utilizava `MediaItem.Builder` sem mapear explicitamente os `streamKeys` e MIME Types específicos da mídia baixada, impedindo que o `DefaultMediaSourceFactory` associasse os blocos gravados no cache com o decodificador apropriado.
+  3. Quando servidores IPTV encerravam a conexão prematuramente sem trafegar dados (0 bytes baixados), o Media3 disparava `STATE_COMPLETED` por ter chegado ao fim do fluxo vazio, marcando falsamente o download como concluído no Room e exibindo o checkmark verde da Netflix.
+- **Decisão**:
+  - **Fábrica de DataSource Resiliente**:
+    - `buildPlaybackDataSourceFactory` agora utiliza `DefaultDataSource.Factory(appCtx, getHttpDataSourceFactory(okHttpClient))` como base, garantindo cabeçalho `User-Agent: IPTVSmartPlayer/1.0...`, redirects automáticos e timeouts seguros.
+    - Upstream dinâmico: valida em tempo de execução via `networkGate.canAccessNetwork()` antes de tentar chamadas remotas, lançando `IOException` segura quando em modo offline sem travar o player.
+    - Flags corrigidas para `CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR`.
+    - Fallback de armazenamento: se `getExternalFilesDir(null)` for nulo, utiliza `appCtx.filesDir` como proteção.
+  - **Reprodução via Media3 `download.request.toMediaItem()`**:
+    - `PlayerEngine.playContent` consulta o `DownloadIndex` do `DownloadManager`. Se o item estiver concluído com bytes válidos no disco (`bytesDownloaded > 0L`), constrói a reprodução diretamente a partir de `download.request.toMediaItem()`, preservando as chaves de cache, os MIME types e as faixas baixadas exatamente como gravadas no disco.
+    - `DefaultMediaSourceFactory` agora recebe o `context.applicationContext` garantindo resolução correta de extratores locais.
+  - **Validação Rigorosa contra Downloads Falsos/Vazios**:
+    - No `DownloadController`, se `state == STATE_COMPLETED` porém `bytesDownloaded == 0L`, o download é sumariamente classificado como `DownloadStatus.FAILED` com mensagem informativa ("O servidor finalizou a conexão sem enviar dados."), impedindo que itens vazios sejam marcados como concluídos.
+    - Adicionado `.setCustomCacheKey(sourceUrl)` no `DownloadRequest.Builder`.
+  - **Reprodução Imediata ao Toque**:
+    - No `SeriesDetailScreen.kt`, ao clicar no botão de download já concluído (checkmark da Netflix), o episódio inicia a reprodução imediatamente com feedback visual.
+- **Consequências**: Arquivos baixados agora abrem instantaneamente tanto offline quanto online, sem erro de reprodução ou tela preta, e falsos downloads sem dados são devidamente acusados e tratados com retry.
+
+
 
 
 

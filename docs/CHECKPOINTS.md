@@ -241,6 +241,22 @@
   - [x] APK instalado e validado no Samsung Galaxy S23 Ultra (`SM-S918B`).
 - **Resultado**: APROVADO.
 
+---
+
+### CP-16: Abertura e Reprodução de Mídias Baixadas (Media3 toMediaItem) e Blindagem contra Falsos Concluídos
+- **Objetivo**: Corrigir o problema de mídias baixadas que não carregavam nem abriam no player após o download, garantir fábrica de DataSources com User-Agent e flags válidas, utilizar a integração oficial do Media3 `toMediaItem()` e rejeitar falsos downloads concluídos com zero bytes.
+- **Critérios de Validação**:
+  - [x] Refatorado `buildPlaybackDataSourceFactory` com `DefaultDataSource.Factory(appCtx, httpFactory)`, User-Agent oficial e flags limpas (`FLAG_IGNORE_CACHE_ON_ERROR`).
+  - [x] Upstream dinâmico: valida estado online/offline em tempo de execução sem estagnar a fábrica na inicialização do app.
+  - [x] `PlayerEngine.playContent` detecta downloads concluídos no disco via `DownloadIndex` e instancia o `MediaItem` oficial (`download.request.toMediaItem()`) com streamKeys e decodificadores corretos.
+  - [x] Resolução completa de MIME Types (`MP4`, `MKV`, `TS`, `HLS`, `DASH`) para streaming e fallback.
+  - [x] `DownloadController` valida `bytesDownloaded > 0L` antes de marcar downloads como `COMPLETED`; descarta conexões vazias do servidor como `DownloadStatus.FAILED` informativo.
+  - [x] Clique no botão de download concluído (checkmark da Netflix) em `SeriesDetailScreen.kt` inicia a reprodução do episódio baixado instantaneamente.
+  - [x] Testes unitários 100% aprovados (`testDebugUnitTest`).
+  - [x] APK gerado com sucesso (`assembleDebug`) e instalado no Samsung Galaxy S23 Ultra (`SM-S918B`).
+- **Resultado**: APROVADO.
+
+
 
 
 
