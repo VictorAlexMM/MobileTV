@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">IPTV Player</string>
+    <string name="downloads_channel_name">Downloads de Mídia</string>
+    <string name="downloads_channel_description">Notificações de progresso de downloads para reprodução offline</string>
+    <string name="recordings_channel_name">Gravações de Transmissão</string>
+    <string name="recordings_channel_description">Notificações de status de gravações agendadas e ao vivo</string>
+
+    <!-- Navegação Principal -->
+    <string name="nav_live">Ao Vivo</string>
+    <string name="nav_movies">Filmes</string>
+    <string name="nav_series">Séries</string>
+    <string name="nav_downloads">Downloads</string>
+    <string name="nav_playlists">Playlists</string>
+    <string name="nav_favorites">Favoritos</string>
+    <string name="nav_settings">Configurações</string>
+
+    <!-- Modo Offline -->
+    <string name="offline_mode_active">Modo Offline Ativado</string>
+    <string name="offline_mode_desc">O tráfego de rede está suspenso. Apenas itens baixados e gravações locais estão acessíveis.</string>
+    <string name="dialog_go_online_title">Item não baixado</string>
+    <string name="dialog_go_online_message">Você está no modo offline. Deseja voltar a ficar online para assistir via streaming?</string>
+    <string name="btn_stay_offline">Ficar offline</string>
+    <string name="btn_go_online">Ficar online</string>
+    <string name="btn_download">Baixar</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="btn_delete">Excluir</string>
+</resources>
