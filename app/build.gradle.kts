@@ -118,8 +118,18 @@ dependencies {
   androidTestImplementation(libs.androidx.test.espresso.core)
 }
 
+val apkRootDir = layout.projectDirectory.dir("../apk")
 val apkMobileDir = layout.projectDirectory.dir("../apk/mobile")
 val apkTvDir = layout.projectDirectory.dir("../apk/tv")
+
+tasks.register<Copy>("copyRootApk") {
+  description = "Copia o APK gerado diretamente para a pasta apk raiz"
+  dependsOn("packageDebug")
+  from(layout.buildDirectory.dir("outputs/apk/debug"))
+  include("app-debug.apk")
+  into(apkRootDir)
+  rename("app-debug.apk", "MobileTV.apk")
+}
 
 tasks.register<Copy>("copyMobileApk") {
   description = "Copia o APK gerado para a pasta apk/mobile"
@@ -140,13 +150,14 @@ tasks.register<Copy>("copyTvApk") {
 }
 
 tasks.register("copyAllApks") {
-  description = "Copia os APKs para as pastas apk/mobile e apk/tv"
-  dependsOn("copyMobileApk", "copyTvApk")
+  description = "Copia os APKs para a pasta raiz apk, apk/mobile e apk/tv"
+  dependsOn("copyRootApk", "copyMobileApk", "copyTvApk")
 }
 
 tasks.matching { it.name == "assembleDebug" }.configureEach {
   finalizedBy("copyAllApks")
 }
+
 
 
 
