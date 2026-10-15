@@ -342,6 +342,29 @@
     - Atualizada a query `getCategoriesWithCount` com `COUNT(DISTINCT LOWER(TRIM(name)))` para refletir a contagem real e precisa de canais únicos por categoria.
 - **Consequências**: A busca agora encontra conteúdos tanto pelo nome quanto pela categoria digitada, a seleção de categorias conta com chips e busca interna dedicada, e as listagens de canais, filmes e séries são 100% livres de itens repetidos.
 
+---
+
+### ADR-023: Arquitetura de Sobreposição (Overlay), Hoisting de Estado e Redução Contínua do Player
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Ao assistir a um episódio de uma série e tentar retornar à tela de episódios da série ou reduzir o reprodutor para o modo compacto, o aplicativo retornava compulsoriamente para o catálogo inicial de séries, além de interromper a reprodução. A investigação identificou três fatores causais:
+  1. `MainApp.kt` alternava de forma excludente (`if (isPlayingFullscreen) PlayerScreen else Scaffold`), desmontando completamente o `Scaffold`, o `SeriesScreen` e todo o estado interno da árvore de composição quando o player entrava em tela cheia.
+  2. `SeriesScreen` mantinha o objeto `selectedSeriesDetails` como estado puramente local (`remember`), que era reiniciado para `null` ao remontar a tela.
+  3. `PlayerScreen` executava `playerEngine.stop()` dentro de `DisposableEffect(Unit)`, desligando o playback no momento em que o player em tela cheia era desmontado para dar lugar ao mini player (`CompactPlayerView`).
+- **Decisão**:
+  - **Sobreposição em Camada (`Box(Modifier.fillMaxSize())`)**:
+    - O `Scaffold` e as abas da aplicação permanecem permanentemente montados em segundo plano.
+    - O `PlayerScreen` é renderizado sobreposto no topo da pilha visual apenas quando `isPlayingFullscreen || isInPipMode`.
+  - **Hoisting de Estado (`currentSeriesDetails`)**:
+    - O estado da série atualmente aberta é gerenciado no nível do `MainApp` e injetado em `SeriesScreen`, garantindo que a página de episódios permaneça intacta independentemente de alternâncias de reprodução.
+  - **Redução Contínua e Sem Cortes**:
+    - Removido `playerEngine.stop()` do ciclo de vida descartável de `PlayerScreen`.
+    - Ao acionar "Reduzir Reprodutor" (`FullscreenExit`) ou o botão voltar do sistema, o aplicativo transita de modo suave para `isPlayingFullscreen = false` e `isCompactPlayerVisible = true`.
+    - A mídia continua tocando ininterruptamente no player compacto embutido no topo da página de detalhes da série (`SeriesDetailScreen`).
+    - A ação de parada completa (`playerEngine.stop()`) é restrita ao botão explícito de fechar (`Icons.Default.Close`) presente tanto no mini player quanto no player em tela cheia.
+- **Consequências**: A transição entre tela cheia e tela da série é instantânea, sem recargas ou perdas de posição, a lista de episódios e temporadas permanece exatamente como o usuário a deixou, e a redução para o player compacto opera perfeitamente sem cortes de áudio/vídeo.
+
+
 
 
 

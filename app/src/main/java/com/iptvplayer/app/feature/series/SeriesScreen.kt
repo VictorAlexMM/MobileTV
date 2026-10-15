@@ -88,6 +88,8 @@ fun SeriesScreen(
     onPlaySeries: (ChannelEntity, isDownloaded: Boolean) -> Unit,
     onEnableOnlineMode: () -> Unit,
     snackbarHostState: SnackbarHostState,
+    selectedSeriesDetails: SeriesDetails? = null,
+    onSelectSeriesDetails: (SeriesDetails?) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -96,21 +98,26 @@ fun SeriesScreen(
     var showCategorySheet by remember { mutableStateOf(false) }
     var showGoOnlineDialog by remember { mutableStateOf(false) }
     var pendingSeriesToPlay by remember { mutableStateOf<Pair<ChannelEntity, Boolean>?>(null) }
-    var selectedSeriesDetails by remember { mutableStateOf<SeriesDetails?>(null) }
+    var localSeriesDetails by remember { mutableStateOf<SeriesDetails?>(null) }
+    val currentSeriesDetails = selectedSeriesDetails ?: localSeriesDetails
+    val updateSeriesDetails: (SeriesDetails?) -> Unit = { details ->
+        localSeriesDetails = details
+        onSelectSeriesDetails(details)
+    }
     var isLoadingSeriesDetails by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     // BackHandler hierárquico para o botão de voltar do celular
-    BackHandler(enabled = selectedSeriesDetails != null) {
-        selectedSeriesDetails = null
+    BackHandler(enabled = currentSeriesDetails != null) {
+        updateSeriesDetails(null)
     }
-    BackHandler(enabled = selectedSeriesDetails == null && showFavoritesOnly) {
+    BackHandler(enabled = currentSeriesDetails == null && showFavoritesOnly) {
         showFavoritesOnly = false
     }
-    BackHandler(enabled = selectedSeriesDetails == null && !showFavoritesOnly && searchQuery.isNotEmpty()) {
+    BackHandler(enabled = currentSeriesDetails == null && !showFavoritesOnly && searchQuery.isNotEmpty()) {
         searchQuery = ""
     }
-    BackHandler(enabled = selectedSeriesDetails == null && !showFavoritesOnly && searchQuery.isEmpty() && selectedCategory != null) {
+    BackHandler(enabled = currentSeriesDetails == null && !showFavoritesOnly && searchQuery.isEmpty() && selectedCategory != null) {
         selectedCategory = null
     }
 
@@ -148,12 +155,12 @@ fun SeriesScreen(
         else -> "Buscar séries ou categorias..."
     }
 
-    if (selectedSeriesDetails != null) {
+    if (currentSeriesDetails != null) {
         SeriesDetailScreen(
-            seriesDetails = selectedSeriesDetails!!,
+            seriesDetails = currentSeriesDetails,
             database = database,
             downloadController = downloadController,
-            onBackClick = { selectedSeriesDetails = null },
+            onBackClick = { updateSeriesDetails(null) },
             onPlayEpisode = { episode, isDownloaded ->
                 if (isOfflineMode && !isDownloaded) {
                     pendingSeriesToPlay = Pair(episode, false)
@@ -412,9 +419,9 @@ fun SeriesScreen(
                                     scope.launch {
                                         try {
                                             isLoadingSeriesDetails = true
-                                            selectedSeriesDetails = repository.loadSeriesDetails(item)
+                                            updateSeriesDetails(repository.loadSeriesDetails(item))
                                         } catch (e: Exception) {
-                                            selectedSeriesDetails = SeriesMetadataHelper.groupEpisodes(listOf(item), fallbackSeriesTitle = item.name)
+                                            updateSeriesDetails(SeriesMetadataHelper.groupEpisodes(listOf(item), fallbackSeriesTitle = item.name))
                                         } finally {
                                             isLoadingSeriesDetails = false
                                         }

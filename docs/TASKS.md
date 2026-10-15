@@ -299,6 +299,25 @@
   - Implementação idêntica para o catálogo de Séries (chips, busca de categorias no modal e carrossel de sugestões).
 - [x] **TASK-1506**: Validação rigorosa com testes unitários (`testDebugUnitTest` 100% aprovados), compilação do APK (`assembleDebug` bem-sucedido) e instalação via ADB no dispositivo de teste (`Success`).
 
+---
+
+## Fase 16 — Preservação da Página de Séries & Redução Contínua do Player (Modo Compacto)
+
+- [x] **TASK-1601**: Reestruturação arquitetural de sobreposição em [MainApp.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/ui/MainApp.kt):
+  - Substituição da alternância excludente (`if (isPlayingFullscreen) PlayerScreen else Scaffold`) por sobreposição em camada (`Box(Modifier.fillMaxSize())`). O `Scaffold` permanece montado sob a tela cheia, preservando intactos o estado da tela, listas, scroll e seleções.
+- [x] **TASK-1602**: Hoisting de estado de detalhes de série em [MainApp.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/ui/MainApp.kt) e [SeriesScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesScreen.kt):
+  - Elevação de `currentSeriesDetails` para o nível de `MainApp`, impedindo que `SeriesDetailScreen` seja descartada ou resetada para a lista geral de séries ao iniciar o player, sair da tela cheia ou reduzir para o modo compacto.
+- [x] **TASK-1603**: Ajuste do fluxo de redução e fechamento em [PlayerScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/PlayerScreen.kt):
+  - Remoção de `playerEngine.stop()` do `DisposableEffect(Unit)` de `PlayerScreen`, permitindo que o vídeo continue reproduzindo sem cortes ao reduzir para o `CompactPlayerView`.
+  - Diferenciação nítida entre "Reduzir Reprodutor" (`FullscreenExit` / `onBackClick`, mantendo reprodução no mini player) e "Fechar Reprodutor" (`Close` / `onClosePlayer`, que descarrega a mídia).
+- [x] **TASK-1604**: Hierarquia de `BackHandler`s do sistema em [MainApp.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/ui/MainApp.kt):
+  - Primeiro toque no botão voltar em fullscreen sai para o player compacto na página da série (`isCompactPlayerVisible = true`).
+  - Segundo toque no botão voltar na página da série retorna para o catálogo geral de séries.
+  - Terceiro toque retorna para a aba de Canais.
+- [x] **TASK-1605**: Validação completa com testes unitários (`testDebugUnitTest` 100% aprovados), compilação do APK (`assembleDebug` bem-sucedido) e instalação via ADB no Samsung Galaxy S23 Ultra (`RQCW1067EEB` - `Success`).
+
+
+
 
 
 

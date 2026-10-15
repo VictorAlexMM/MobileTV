@@ -301,6 +301,23 @@
   - [x] Instalação via ADB no dispositivo de teste com êxito (`Success`).
 - **Resultado**: APROVADO.
 
+---
+
+### CP-20: Preservação de Estado da Página da Série & Redução Sem Interrupção do Reprodutor
+- **Objetivo**: Assegurar que ao iniciar a reprodução de um episódio a partir da página da série, o retorno à tela ou a redução do player para o modo compacto mantenha o usuário exatamente na página da série (com suas temporadas e episódios), e que a redução não cause parada ou reinicialização do vídeo.
+- **Critérios de Validação**:
+  - [x] Renderização por sobreposição (`Box`) em `MainApp.kt`, impedindo descarte do `Scaffold` durante o modo fullscreen.
+  - [x] Elevação (`hoisting`) de `currentSeriesDetails` mantendo a página da série aberta ao sair/reduzir o player.
+  - [x] Remoção de `playerEngine.stop()` do `DisposableEffect` de `PlayerScreen.kt`, viabilizando transição contínua para o `CompactPlayerView`.
+  - [x] Adição do botão explícito `Fechar Reprodutor` (`Icons.Default.Close`) no `PlayerScreen`.
+  - [x] Navegação hierárquica do botão voltar do celular: Fullscreen -> Player Compacto na Série -> Lista de Séries -> Canais.
+  - [x] Testes unitários 100% aprovados (`testDebugUnitTest`).
+  - [x] Compilação do APK concluída com sucesso (`assembleDebug`).
+  - [x] Instalação via ADB no dispositivo Samsung Galaxy S23 Ultra (`RQCW1067EEB` - `Success`).
+- **Resultado**: APROVADO.
+
+
+
 
 
 

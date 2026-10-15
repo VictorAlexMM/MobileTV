@@ -67,6 +67,7 @@ import com.iptvplayer.app.feature.vod.VodScreen
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.ui.platform.LocalContext
+import com.iptvplayer.app.feature.series.SeriesDetails
 import com.iptvplayer.app.feature.series.SeriesScreen
 import kotlinx.coroutines.launch
 
@@ -96,6 +97,7 @@ fun MainApp(
     var currentDestination by remember { mutableStateOf(AppDestination.LIVE) }
     var isPlayingFullscreen by remember { mutableStateOf(false) }
     var isCompactPlayerVisible by remember { mutableStateOf(false) }
+    var currentSeriesDetails by remember { mutableStateOf<SeriesDetails?>(null) }
 
     val activePlaylistId by settingsRepository.activePlaylistId.collectAsState(initial = null)
     val allPlaylists by playlistRepository.getAllPlaylists().collectAsState(initial = emptyList())
@@ -117,13 +119,14 @@ fun MainApp(
     var lastBackPressTime by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
     val activity = context as? Activity
 
-    // Se estiver em fullscreen, o botão de voltar sai do fullscreen
+    // Se estiver em fullscreen, o botão de voltar sai do fullscreen para o player compacto
     BackHandler(enabled = isPlayingFullscreen) {
         isPlayingFullscreen = false
+        isCompactPlayerVisible = true
     }
 
-    // Se estiver em uma aba secundária (Filmes, Séries, Downloads, Playlists, Ajustes), volta para Canais
-    BackHandler(enabled = !isPlayingFullscreen && currentDestination != AppDestination.LIVE) {
+    // Se estiver em uma aba secundária (Filmes, Séries, Downloads, Playlists, Ajustes) e não estiver em detalhes de série, volta para Canais
+    BackHandler(enabled = !isPlayingFullscreen && currentDestination != AppDestination.LIVE && currentSeriesDetails == null) {
         currentDestination = AppDestination.LIVE
     }
 
@@ -165,35 +168,7 @@ fun MainApp(
         }
     }
 
-    if (isPlayingFullscreen || isInPipMode) {
-        PlayerScreen(
-            playerEngine = playerEngine,
-            onBackClick = {
-                playerEngine.stop()
-                isPlayingFullscreen = false
-                isCompactPlayerVisible = false
-            },
-            isInPipMode = isInPipMode,
-            onEnterPip = onEnterPip,
-            onStartRecording = { channelId, title, streamUrl, duration ->
-                scope.launch {
-                    try {
-                        RecordingScheduler.startImmediateRecording(
-                            context = context,
-                            database = database,
-                            channelId = channelId,
-                            title = title,
-                            streamUrl = streamUrl,
-                            durationMinutes = duration
-                        )
-                        snackbarHostState.showSnackbar("Gravação iniciada: $title ($duration min)")
-                    } catch (e: Exception) {
-                        snackbarHostState.showSnackbar("Erro ao iniciar gravação: ${e.localizedMessage}")
-                    }
-                }
-            }
-        )
-    } else {
+    Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
                 Column {
@@ -276,7 +251,7 @@ fun MainApp(
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                if (isCompactPlayerVisible) {
+                if (isCompactPlayerVisible && !isPlayingFullscreen) {
                     CompactPlayerView(
                         playerEngine = playerEngine,
                         onExpandFullscreen = { isPlayingFullscreen = true },
@@ -332,6 +307,8 @@ fun MainApp(
                                 downloadController = downloadController,
                                 activePlaylistId = activePlaylistId,
                                 isOfflineMode = isAppOffline,
+                                selectedSeriesDetails = currentSeriesDetails,
+                                onSelectSeriesDetails = { currentSeriesDetails = it },
                                 onPlaySeries = { series, isDownloaded ->
                                     handlePlay(series.id, series.name, series.streamUrl, isDownloaded)
                                 },
@@ -388,6 +365,40 @@ fun MainApp(
             }
         }
     }
-}
+
+        if (isPlayingFullscreen || isInPipMode) {
+            PlayerScreen(
+                playerEngine = playerEngine,
+                onBackClick = {
+                    isPlayingFullscreen = false
+                    isCompactPlayerVisible = true
+                },
+                onClosePlayer = {
+                    playerEngine.stop()
+                    isPlayingFullscreen = false
+                    isCompactPlayerVisible = false
+                },
+                isInPipMode = isInPipMode,
+                onEnterPip = onEnterPip,
+                onStartRecording = { channelId, title, streamUrl, duration ->
+                    scope.launch {
+                        try {
+                            RecordingScheduler.startImmediateRecording(
+                                context = context,
+                                database = database,
+                                channelId = channelId,
+                                title = title,
+                                streamUrl = streamUrl,
+                                durationMinutes = duration
+                            )
+                            snackbarHostState.showSnackbar("Gravação iniciada: $title ($duration min)")
+                        } catch (e: Exception) {
+                            snackbarHostState.showSnackbar("Erro ao iniciar gravação: ${e.localizedMessage}")
+                        }
+                    }
+                }
+            )
+        }
+    }
 }
 

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.FullscreenExit
@@ -78,6 +79,7 @@ import kotlinx.coroutines.delay
 fun PlayerScreen(
     playerEngine: PlayerEngine,
     onBackClick: () -> Unit,
+    onClosePlayer: () -> Unit = onBackClick,
     isInPipMode: Boolean = false,
     onEnterPip: () -> Unit = {},
     onStartRecording: ((channelId: String, title: String, streamUrl: String, durationMinutes: Int) -> Unit)? = null,
@@ -113,12 +115,6 @@ fun PlayerScreen(
     // Intercepta o botão de voltar do celular para sair do fullscreen sem fechar o app
     BackHandler(enabled = !isInPipMode) {
         onBackClick()
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            playerEngine.stop()
-        }
     }
 
     Box(
@@ -268,11 +264,20 @@ fun PlayerScreen(
                         }
                     }
 
-                    // Botão Sair da Tela Cheia (Retornar ao player compacto)
+                    // Botão Sair da Tela Cheia (Retornar ao player compacto / página anterior)
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.Default.FullscreenExit,
-                            contentDescription = "Sair da Tela Cheia",
+                            contentDescription = "Reduzir Reprodutor",
+                            tint = Color.White
+                        )
+                    }
+
+                    // Botão Fechar Reprodutor (Encerra a reprodução)
+                    IconButton(onClick = onClosePlayer) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Fechar Reprodutor",
                             tint = Color.White
                         )
                     }
