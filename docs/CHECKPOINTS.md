@@ -202,5 +202,24 @@
   - [x] Compilação do APK e instalação bem-sucedida via ADB no Samsung Galaxy S23 Ultra (`SM-S918B`).
 - **Resultado**: APROVADO.
 
+---
+
+### CP-14: Filtro de Favoritos (Canais, Filmes e Séries) e Gestão Hierárquica do Botão de Voltar do Sistema
+- **Objetivo**: Disponibilizar filtro instantâneo de favoritos com um toque nas 3 seções de conteúdo (Canais, Filmes e Séries) integrado ao SQLite Room e resolver definitivamente o encerramento indesejado do aplicativo ao acionar o botão de voltar físico/gesto do celular.
+- **Critérios de Validação**:
+  - [x] Query Room `ChannelDao.getChannelsFilteredPaged` com suporte a `onlyFavorites` (`:onlyFavorites = 0 OR isFavorite = 1`) e método `getFavoriteCount`.
+  - [x] Botão de favoritos (`Icons.Default.Favorite`) na barra superior de Canais (`LiveScreen`), Filmes (`VodScreen`) e Séries (`SeriesScreen`) com ativação visual e cor de destaque (`#FFFF2A55`).
+  - [x] Opção "Somente Favoritos" no menu hambúrguer de categorias (`CategoryBottomSheet`).
+  - [x] Placeholder dinâmico indicando o contexto dos favoritos (`Buscar em canais favoritos...`, `Buscar favoritos em "Terror"...`, etc.).
+  - [x] Mensagens de estado vazio personalizadas orientando a favoritar conteúdos caso nenhum esteja marcado.
+  - [x] Botão de voltar do celular no player fullscreen sai do modo de tela cheia sem fechar o app (`PlayerScreen.kt`).
+  - [x] Botão de voltar na tela de detalhes de episódios/série retorna à lista de séries sem fechar o app (`SeriesScreen.kt`).
+  - [x] Botão de voltar no modal de detalhes do filme fecha o modal sem fechar o app (`VodScreen.kt`).
+  - [x] Botão de voltar em abas secundárias (Filmes, Séries, Downloads, Playlists, Ajustes) retorna para a aba inicial de Canais (`MainApp.kt`).
+  - [x] Botão de voltar na tela raiz exige duplo clique com Toast preventivo ("Pressione voltar novamente para sair") antes de encerrar o aplicativo.
+  - [x] Testes unitários 100% aprovados (`testDebugUnitTest`).
+  - [x] APK compilado com sucesso (`assembleDebug`) e instalado no Samsung Galaxy S23 Ultra (`SM-S918B`).
+- **Resultado**: APROVADO.
+
 
 

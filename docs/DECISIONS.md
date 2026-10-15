@@ -217,6 +217,25 @@
   - Remover a ação de download dos cards externos e banners na tela de séries, centralizando o download de episódios e temporadas completas estritamente dentro da tela de detalhes da série (`SeriesDetailScreen`).
 - **Consequências**: Ergonomia e usabilidade móvel aprimoradas, busca precisa sem ruído de categorias alheias, rotação imersiva automática e interface mais limpa.
 
+---
+
+### ADR-017: Filtro Unificado de Favoritos e Tratamento Hierárquico do Botão de Voltar do Sistema
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Anteriormente, não havia como filtrar somente itens favoritados nas seções principais de Ao Vivo, Filmes e Séries. Além disso, o botão de voltar físico/gesto do Android (`onBackPressed`) fechava o aplicativo abruptamente quando o usuário estava assistindo em tela cheia, consultando episódios de uma série, visualizando detalhes de um filme ou navegando entre abas.
+- **Decisão**:
+  - Estender `ChannelDao.getChannelsFilteredPaged` com a cláusula SQL `(:onlyFavorites = 0 OR isFavorite = 1)` e expor `getFavoriteCount(playlistId, contentType)` no `ChannelRepository`, garantindo que a filtragem por favoritos ocorra diretamente no SQLite com suporte a paginação e busca textual.
+  - Implementar o botão de favoritos (ícone `Icons.Default.Favorite` com feedback visual de ativação e cor de destaque) na barra superior de Canais (`LiveScreen`), Filmes (`VodScreen`) e Séries (`SeriesScreen`), além de incluir a opção "Somente Favoritos" no menu hambúrguer de categorias (`CategoryBottomSheet`).
+  - Estabelecer uma arquitetura de `BackHandler`s do Jetpack Compose com precedência em camadas:
+    1. Player em tela cheia: sai do fullscreen e restaura a visualização compacta sem fechar o app (`PlayerScreen.kt`).
+    2. Detalhes de séries: fecha o modal de temporadas/episódios e retorna à lista de séries (`SeriesScreen.kt`).
+    3. Detalhes de filmes: fecha o sheet de biografia/metadados e retorna à grade de filmes (`VodScreen.kt`).
+    4. Guia EPG e sheets de categorias: fecha o sheet ativo.
+    5. Filtro de favoritos e busca: desativa o filtro de favoritos ou limpa a query de pesquisa.
+    6. Abas secundárias: retorna à aba inicial de Canais (`AppDestination.LIVE`) em vez de fechar o app (`MainApp.kt`).
+    7. Raiz do aplicativo: requer toque duplo no botão voltar dentro de 2 segundos com Toast de aviso ("Pressione voltar novamente para sair") antes de finalizar a Activity.
+- **Consequências**: Experiência de usuário fluida e natural no Android, prevenção total contra fechamentos acidentais do app e acesso rápido e consistente aos itens favoritos em qualquer seção.
+
 
 
 

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -107,6 +108,11 @@ fun PlayerScreen(
         } else {
             onDispose { }
         }
+    }
+
+    // Intercepta o botão de voltar do celular para sair do fullscreen sem fechar o app
+    BackHandler(enabled = !isInPipMode) {
+        onBackClick()
     }
 
     DisposableEffect(Unit) {

@@ -1,5 +1,6 @@
 package com.iptvplayer.app.feature.live
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -20,6 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Schedule
@@ -86,10 +90,25 @@ fun LiveScreen(
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
+    var showFavoritesOnly by remember { mutableStateOf(false) }
     var showGoOnlineDialog by remember { mutableStateOf(false) }
     var pendingChannelToPlay by remember { mutableStateOf<ChannelEntity?>(null) }
     var selectedChannelForEpg by remember { mutableStateOf<ChannelEntity?>(null) }
     val scope = rememberCoroutineScope()
+
+    // BackHandler hierárquico para o botão de voltar do celular
+    BackHandler(enabled = selectedChannelForEpg != null) {
+        selectedChannelForEpg = null
+    }
+    BackHandler(enabled = selectedChannelForEpg == null && showFavoritesOnly) {
+        showFavoritesOnly = false
+    }
+    BackHandler(enabled = selectedChannelForEpg == null && !showFavoritesOnly && searchQuery.isNotEmpty()) {
+        searchQuery = ""
+    }
+    BackHandler(enabled = selectedChannelForEpg == null && !showFavoritesOnly && searchQuery.isEmpty() && selectedCategory != null) {
+        selectedCategory = null
+    }
 
     val categories by if (activePlaylistId != null) {
         repository.getCategories(activePlaylistId, ContentType.LIVE).collectAsState(initial = emptyList())
@@ -97,19 +116,27 @@ fun LiveScreen(
         remember { mutableStateOf(emptyList<String>()) }
     }
 
-    val channelsPaging = remember(activePlaylistId, selectedCategory, searchQuery) {
+    val channelsPaging = remember(activePlaylistId, selectedCategory, searchQuery, showFavoritesOnly) {
         repository.getChannelsFilteredPaged(
             playlistId = activePlaylistId,
             contentType = ContentType.LIVE,
             category = selectedCategory,
-            query = searchQuery.trim()
+            query = searchQuery.trim(),
+            onlyFavorites = showFavoritesOnly
         )
     }.collectAsLazyPagingItems()
 
     var showCategorySheet by remember { mutableStateOf(false) }
 
+    val searchPlaceholder = when {
+        showFavoritesOnly && selectedCategory != null -> "Buscar favoritos em \"$selectedCategory\"..."
+        showFavoritesOnly -> "Buscar em canais favoritos..."
+        selectedCategory != null -> "Buscar em \"$selectedCategory\"..."
+        else -> "Buscar canais ao vivo..."
+    }
+
     Column(modifier = modifier.fillMaxSize()) {
-        // Campo de busca
+        // Campo de busca com botões de favoritos e categoria
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -121,7 +148,7 @@ fun LiveScreen(
                 onValueChange = { searchQuery = it },
                 placeholder = {
                     Text(
-                        text = if (selectedCategory != null) "Buscar em \"$selectedCategory\"..." else "Buscar canais ao vivo...",
+                        text = searchPlaceholder,
                         color = com.iptvplayer.app.core.designsystem.theme.TextMutedDark,
                         fontSize = 14.sp
                     )
@@ -139,8 +166,27 @@ fun LiveScreen(
                 modifier = Modifier.weight(1f)
             )
 
+            // Botão Ver Somente Favoritos
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(
+                onClick = { showFavoritesOnly = !showFavoritesOnly },
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (showFavoritesOnly) Color(0xFFFF2A55).copy(alpha = 0.25f)
+                        else com.iptvplayer.app.core.designsystem.theme.DarkSurface
+                    )
+            ) {
+                Icon(
+                    imageVector = if (showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Ver somente favoritos",
+                    tint = if (showFavoritesOnly) Color(0xFFFF2A55) else Color.White
+                )
+            }
+
             if (categories.isNotEmpty()) {
-                androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(start = 8.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 IconButton(
                     onClick = { showCategorySheet = true },
                     modifier = Modifier
@@ -241,8 +287,14 @@ fun LiveScreen(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 } else if (channelsPaging.itemCount == 0) {
+                    val emptyMessage = when {
+                        showFavoritesOnly && searchQuery.isNotBlank() -> "Nenhum canal favorito encontrado para \"$searchQuery\"."
+                        showFavoritesOnly -> "Nenhum canal favorito marcado ainda.\nToque no ícone de coração em qualquer canal para favoritá-lo."
+                        searchQuery.isNotBlank() -> "Nenhum canal encontrado para \"$searchQuery\"."
+                        else -> "Nenhum canal ao vivo encontrado nesta categoria."
+                    }
                     Text(
-                        text = if (searchQuery.isNotBlank()) "Nenhum canal encontrado para \"$searchQuery\"." else "Nenhum canal ao vivo encontrado nesta categoria.",
+                        text = emptyMessage,
                         style = MaterialTheme.typography.bodyMedium.copy(color = com.iptvplayer.app.core.designsystem.theme.TextMutedDark),
                         modifier = Modifier.align(Alignment.Center),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -280,9 +332,10 @@ fun LiveScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(if (selectedCategory == null) PrimaryIndigo.copy(alpha = 0.2f) else Color.Transparent)
+                                .background(if (selectedCategory == null && !showFavoritesOnly) PrimaryIndigo.copy(alpha = 0.2f) else Color.Transparent)
                                 .clickable {
                                     selectedCategory = null
+                                    showFavoritesOnly = false
                                     showCategorySheet = false
                                 }
                                 .padding(12.dp),
@@ -290,8 +343,36 @@ fun LiveScreen(
                         ) {
                             Text(
                                 text = "Todos os Canais",
-                                color = if (selectedCategory == null) PrimaryIndigo else Color.White,
-                                fontWeight = if (selectedCategory == null) FontWeight.Bold else FontWeight.Normal
+                                color = if (selectedCategory == null && !showFavoritesOnly) PrimaryIndigo else Color.White,
+                                fontWeight = if (selectedCategory == null && !showFavoritesOnly) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (showFavoritesOnly) Color(0xFFFF2A55).copy(alpha = 0.2f) else Color.Transparent)
+                                .clickable {
+                                    showFavoritesOnly = !showFavoritesOnly
+                                    showCategorySheet = false
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                tint = if (showFavoritesOnly) Color(0xFFFF2A55) else Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Somente Favoritos",
+                                color = if (showFavoritesOnly) Color(0xFFFF2A55) else Color.White,
+                                fontWeight = if (showFavoritesOnly) FontWeight.Bold else FontWeight.Normal
                             )
                         }
                     }

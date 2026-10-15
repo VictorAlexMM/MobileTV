@@ -1,5 +1,6 @@
 package com.iptvplayer.app.feature.series
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,6 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VideoLibrary
@@ -87,6 +90,7 @@ fun SeriesScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
+    var showFavoritesOnly by remember { mutableStateOf(false) }
     var showCategorySheet by remember { mutableStateOf(false) }
     var showGoOnlineDialog by remember { mutableStateOf(false) }
     var pendingSeriesToPlay by remember { mutableStateOf<Pair<ChannelEntity, Boolean>?>(null) }
@@ -94,20 +98,42 @@ fun SeriesScreen(
     var isLoadingSeriesDetails by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    // BackHandler hierárquico para o botão de voltar do celular
+    BackHandler(enabled = selectedSeriesDetails != null) {
+        selectedSeriesDetails = null
+    }
+    BackHandler(enabled = selectedSeriesDetails == null && showFavoritesOnly) {
+        showFavoritesOnly = false
+    }
+    BackHandler(enabled = selectedSeriesDetails == null && !showFavoritesOnly && searchQuery.isNotEmpty()) {
+        searchQuery = ""
+    }
+    BackHandler(enabled = selectedSeriesDetails == null && !showFavoritesOnly && searchQuery.isEmpty() && selectedCategory != null) {
+        selectedCategory = null
+    }
+
     val categories by if (activePlaylistId != null) {
         repository.getCategories(activePlaylistId, ContentType.SERIES).collectAsState(initial = emptyList())
     } else {
         remember { mutableStateOf(emptyList<String>()) }
     }
 
-    val seriesPaging = remember(activePlaylistId, selectedCategory, searchQuery) {
+    val seriesPaging = remember(activePlaylistId, selectedCategory, searchQuery, showFavoritesOnly) {
         repository.getChannelsFilteredPaged(
             playlistId = activePlaylistId,
             contentType = ContentType.SERIES,
             category = selectedCategory,
-            query = searchQuery.trim()
+            query = searchQuery.trim(),
+            onlyFavorites = showFavoritesOnly
         )
     }.collectAsLazyPagingItems()
+
+    val searchPlaceholder = when {
+        showFavoritesOnly && selectedCategory != null -> "Buscar favoritos em \"$selectedCategory\"..."
+        showFavoritesOnly -> "Buscar em séries favoritas..."
+        selectedCategory != null -> "Buscar em \"$selectedCategory\"..."
+        else -> "Buscar séries..."
+    }
 
     if (selectedSeriesDetails != null) {
         SeriesDetailScreen(
@@ -132,7 +158,7 @@ fun SeriesScreen(
                 .fillMaxSize()
                 .background(DarkBackground)
         ) {
-        // Barra de Busca Minimalista
+        // Barra de Busca Minimalista com Favoritos e Categorias
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -144,7 +170,7 @@ fun SeriesScreen(
                 onValueChange = { searchQuery = it },
                 placeholder = {
                     Text(
-                        text = if (selectedCategory != null) "Buscar em \"$selectedCategory\"..." else "Buscar séries...",
+                        text = searchPlaceholder,
                         color = TextMutedDark,
                         fontSize = 14.sp
                     )
@@ -179,6 +205,30 @@ fun SeriesScreen(
                 ),
                 modifier = Modifier.weight(1f)
             )
+
+            // Botão Ver Somente Favoritos
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(
+                onClick = { showFavoritesOnly = !showFavoritesOnly },
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (showFavoritesOnly) Color(0xFFFF2A55).copy(alpha = 0.25f)
+                        else DarkSurface
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = if (showFavoritesOnly) Color(0xFFFF2A55) else DarkSurfaceVariant,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+            ) {
+                Icon(
+                    imageVector = if (showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Ver somente favoritas",
+                    tint = if (showFavoritesOnly) Color(0xFFFF2A55) else Color.White
+                )
+            }
 
             if (categories.isNotEmpty()) {
                 Spacer(modifier = Modifier.width(8.dp))
@@ -291,6 +341,12 @@ fun SeriesScreen(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 } else if (seriesPaging.itemCount == 0) {
+                    val emptyMessage = when {
+                        showFavoritesOnly && searchQuery.isNotBlank() -> "Nenhuma série favorita encontrada para \"$searchQuery\"."
+                        showFavoritesOnly -> "Nenhuma série favorita marcada ainda.\nToque no ícone de coração em qualquer série para favoritá-la."
+                        searchQuery.isNotBlank() -> "Nenhuma série para \"$searchQuery\""
+                        else -> "Nenhuma série encontrada nesta categoria."
+                    }
                     Column(
                         modifier = Modifier
                             .align(Alignment.Center)
@@ -298,14 +354,14 @@ fun SeriesScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
-                            imageVector = Icons.Default.VideoLibrary,
+                            imageVector = if (showFavoritesOnly) Icons.Default.FavoriteBorder else Icons.Default.VideoLibrary,
                             contentDescription = null,
-                            tint = TextMutedDark,
+                            tint = if (showFavoritesOnly) Color(0xFFFF2A55) else TextMutedDark,
                             modifier = Modifier.size(48.dp)
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = if (searchQuery.isNotBlank()) "Nenhuma série para \"$searchQuery\"" else "Nenhuma série encontrada nesta categoria.",
+                            text = emptyMessage,
                             style = MaterialTheme.typography.bodyMedium.copy(color = TextMutedDark),
                             textAlign = TextAlign.Center
                         )
@@ -369,9 +425,10 @@ fun SeriesScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(if (selectedCategory == null) PrimaryIndigo.copy(alpha = 0.2f) else Color.Transparent)
+                                .background(if (selectedCategory == null && !showFavoritesOnly) PrimaryIndigo.copy(alpha = 0.2f) else Color.Transparent)
                                 .clickable {
                                     selectedCategory = null
+                                    showFavoritesOnly = false
                                     showCategorySheet = false
                                 }
                                 .padding(12.dp),
@@ -379,8 +436,36 @@ fun SeriesScreen(
                         ) {
                             Text(
                                 text = "Todas as Séries",
-                                color = if (selectedCategory == null) PrimaryIndigo else Color.White,
-                                fontWeight = if (selectedCategory == null) FontWeight.Bold else FontWeight.Normal
+                                color = if (selectedCategory == null && !showFavoritesOnly) PrimaryIndigo else Color.White,
+                                fontWeight = if (selectedCategory == null && !showFavoritesOnly) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (showFavoritesOnly) Color(0xFFFF2A55).copy(alpha = 0.2f) else Color.Transparent)
+                                .clickable {
+                                    showFavoritesOnly = !showFavoritesOnly
+                                    showCategorySheet = false
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                tint = if (showFavoritesOnly) Color(0xFFFF2A55) else Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Somente Favoritas",
+                                color = if (showFavoritesOnly) Color(0xFFFF2A55) else Color.White,
+                                fontWeight = if (showFavoritesOnly) FontWeight.Bold else FontWeight.Normal
                             )
                         }
                     }

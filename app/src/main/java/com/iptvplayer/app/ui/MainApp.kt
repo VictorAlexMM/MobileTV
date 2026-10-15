@@ -1,5 +1,8 @@
 package com.iptvplayer.app.ui
 
+import android.app.Activity
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -110,6 +113,30 @@ fun MainApp(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    var lastBackPressTime by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    val activity = context as? Activity
+
+    // Se estiver em fullscreen, o botão de voltar sai do fullscreen
+    BackHandler(enabled = isPlayingFullscreen) {
+        isPlayingFullscreen = false
+    }
+
+    // Se estiver em uma aba secundária (Filmes, Séries, Downloads, Playlists, Ajustes), volta para Canais
+    BackHandler(enabled = !isPlayingFullscreen && currentDestination != AppDestination.LIVE) {
+        currentDestination = AppDestination.LIVE
+    }
+
+    // Se estiver na tela inicial (Canais), requer duplo clique para sair do aplicativo, evitando saída acidental
+    BackHandler(enabled = !isPlayingFullscreen && currentDestination == AppDestination.LIVE) {
+        val now = System.currentTimeMillis()
+        if (now - lastBackPressTime < 2000L) {
+            activity?.finish()
+        } else {
+            lastBackPressTime = now
+            Toast.makeText(context, "Pressione voltar novamente para sair", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     val handlePlay: (String, String, String, Boolean) -> Unit = { id, title, url, isDownloaded ->
         if (externalPlayerEnabled && !isDownloaded) {

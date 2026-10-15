@@ -179,5 +179,23 @@
 - [x] **TASK-905**: Remoção do botão e banner de download externo na lista de séries, mantendo o download exclusivamente dentro da tela de detalhes da série ([SeriesDetailScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesDetailScreen.kt)).
 - [x] **TASK-906**: Testes unitários 100% aprovados, compilação do APK e deploy no Samsung Galaxy S23 Ultra (`SM-S918B`).
 
+---
+
+## Fase 10 — Filtro de Favoritos (Canais, Filmes e Séries) e Prevenção de Saída Indesejada via Botão de Voltar do Celular
+
+- [x] **TASK-1001**: Atualização do Room DAO ([ChannelDao.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/database/dao/ChannelDao.kt)) e do repositório ([ChannelRepository.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/live/ChannelRepository.kt)) para suportar `onlyFavorites: Boolean` em `getChannelsFilteredPaged` (`:onlyFavorites = 0 OR isFavorite = 1`) e contagem via `getFavoriteCount`.
+- [x] **TASK-1002**: Adição de botão e filtro de favoritos nas 3 seções do app ([LiveScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/live/LiveScreen.kt), [VodScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/vod/VodScreen.kt) e [SeriesScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesScreen.kt)):
+  - Botão de coração dedicado ao lado do campo de busca com destaque visual ativo.
+  - Opção "Somente Favoritos" no menu hambúrguer de categorias (`CategoryBottomSheet`).
+  - Placeholder dinâmico e mensagem de estado vazio personalizada para favoritos.
+- [x] **TASK-1003**: Resolução definitiva do bug do botão de voltar físico/gesto do celular (`BackHandler`):
+  - Saída do player fullscreen de volta para a tela principal em vez de fechar o app ([PlayerScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/PlayerScreen.kt)).
+  - Fechamento da tela de episódios/temporadas em vez de fechar o app ([SeriesScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesScreen.kt)).
+  - Fechamento do modal de detalhes do filme em vez de fechar o app ([VodScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/vod/VodScreen.kt)).
+  - Fechamento de sheets de categorias, limpeza de busca e retorno à categoria padrão em camadas lógicas.
+  - Retorno à aba inicial de Canais a partir de abas secundárias em vez de fechar o app ([MainApp.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/ui/MainApp.kt)).
+  - Confirmação de saída com duplo clique e Toast protetivo ("Pressione voltar novamente para sair") na tela raiz.
+- [x] **TASK-1004**: Validação de testes unitários (`testDebugUnitTest`), compilação do APK e deploy direto no Samsung Galaxy S23 Ultra (`SM-S918B`).
+
 
 

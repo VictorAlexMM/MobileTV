@@ -49,19 +49,24 @@ class ChannelRepository(
     }
 
     /**
-     * Busca paginada unificada com filtro estrito por contentType, categoria opcional e query de busca.
-     * Permite que a busca textual filtre exclusivamente dentro da categoria selecionada.
+     * Busca paginada unificada com filtro estrito por contentType, categoria opcional, query de busca e favoritos.
+     * Permite que a busca textual filtre exclusivamente dentro da categoria selecionada ou dos favoritos.
      */
     fun getChannelsFilteredPaged(
         playlistId: Long?,
         contentType: ContentType,
         category: String?,
-        query: String
+        query: String,
+        onlyFavorites: Boolean = false
     ): Flow<PagingData<ChannelEntity>> {
         return Pager(
             config = PagingConfig(pageSize = 40, enablePlaceholders = true),
-            pagingSourceFactory = { channelDao.getChannelsFilteredPaged(playlistId, contentType, category, query) }
+            pagingSourceFactory = { channelDao.getChannelsFilteredPaged(playlistId, contentType, category, query, onlyFavorites) }
         ).flow
+    }
+
+    fun getFavoriteCount(playlistId: Long?, contentType: ContentType): Flow<Int> {
+        return channelDao.getFavoriteCount(playlistId, contentType)
     }
 
     fun getCategories(playlistId: Long, contentType: ContentType): Flow<List<String>> {

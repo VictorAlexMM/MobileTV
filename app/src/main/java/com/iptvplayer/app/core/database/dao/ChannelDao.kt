@@ -22,7 +22,7 @@ interface ChannelDao {
 
     /**
      * Busca paginada unificada com isolamento estrito por ContentType (LIVE, MOVIE, SERIES).
-     * Suporta filtro opcional por playlist, por categoria e busca textual em tempo real.
+     * Suporta filtro opcional por playlist, por categoria, busca textual e filtro de favoritos.
      */
     @Query("""
         SELECT * FROM channels 
@@ -30,14 +30,27 @@ interface ChannelDao {
           AND contentType = :contentType
           AND (:category IS NULL OR groupTitle = :category)
           AND (:query = '' OR name LIKE '%' || :query || '%')
+          AND (:onlyFavorites = 0 OR isFavorite = 1)
         ORDER BY name ASC
     """)
     fun getChannelsFilteredPaged(
         playlistId: Long?,
         contentType: ContentType,
         category: String?,
-        query: String
+        query: String,
+        onlyFavorites: Boolean = false
     ): PagingSource<Int, ChannelEntity>
+
+    @Query("""
+        SELECT COUNT(*) FROM channels 
+        WHERE (:playlistId IS NULL OR playlistId = :playlistId) 
+          AND contentType = :contentType
+          AND isFavorite = 1
+    """)
+    fun getFavoriteCount(
+        playlistId: Long?,
+        contentType: ContentType
+    ): Flow<Int>
 
     @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND contentType = :contentType ORDER BY name ASC")
     fun getChannelsPaged(playlistId: Long, contentType: ContentType): PagingSource<Int, ChannelEntity>
