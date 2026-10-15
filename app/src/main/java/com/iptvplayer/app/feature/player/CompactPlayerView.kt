@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -33,6 +34,8 @@ import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -204,11 +207,56 @@ fun CompactPlayerView(
                     }
                 }
 
+                // Barra de Progresso / Seekbar com tempos (VOD / Filmes / Séries)
+                if (!uiState.isLive && uiState.durationMs > 0) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp)
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 38.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = formatCompactDuration(uiState.currentPositionMs),
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = formatCompactDuration(uiState.durationMs),
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 10.sp
+                            )
+                        }
+
+                        Slider(
+                            value = uiState.currentPositionMs.toFloat().coerceIn(0f, uiState.durationMs.toFloat()),
+                            onValueChange = { newPos ->
+                                playerEngine.seekTo(newPos.toLong())
+                            },
+                            valueRange = 0f..uiState.durationMs.toFloat(),
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(0xFFFF0000),
+                                activeTrackColor = Color(0xFFFF0000),
+                                inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(16.dp)
+                        )
+                    }
+                }
+
                 // Rodapé: Mudo, PiP e Botão de Tela Cheia
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
                         .align(Alignment.BottomCenter),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -259,13 +307,27 @@ fun CompactPlayerView(
             }
         }
 
-        // Barra de progresso vermelha estilo YouTube no rodapé do player compacto
+        // Barra de progresso vermelha permanente estilo YouTube no rodapé do player compacto
         if (!uiState.isLive && uiState.durationMs > 0) {
             val progressFraction = (uiState.currentPositionMs.toFloat() / uiState.durationMs.toFloat()).coerceIn(0f, 1f)
             YouTubeProgressBar(
                 progressFraction = progressFraction,
+                barHeight = 3.dp,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
+    }
+}
+
+private fun formatCompactDuration(ms: Long): String {
+    if (ms <= 0) return "00:00"
+    val totalSeconds = ms / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        "%d:%02d:%02d".format(hours, minutes, seconds)
+    } else {
+        "%02d:%02d".format(minutes, seconds)
     }
 }

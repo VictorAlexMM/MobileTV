@@ -25,13 +25,13 @@ fun YouTubeProgressBar(
     backgroundColor: Color = Color.Black.copy(alpha = 0.6f)
 ) {
     val clampedProgress = progressFraction.coerceIn(0f, 1f)
-    if (clampedProgress > 0f) {
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(barHeight)
-                .background(backgroundColor)
-        ) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(barHeight)
+            .background(backgroundColor)
+    ) {
+        if (clampedProgress > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(clampedProgress)

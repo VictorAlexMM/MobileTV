@@ -168,4 +168,16 @@
 - [x] **TASK-806**: Cobertura completa de testes unitários em [SeriesMetadataHelperTest.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/test/java/com/iptvplayer/app/feature/series/SeriesMetadataHelperTest.kt) (100% de aprovação).
 - [x] **TASK-807**: Compilação e instalação direta no Samsung Galaxy S23 Ultra (`SM-S918B`).
 
+---
+
+## Fase 9 — Busca Contextual por Categoria, Barra de Progresso no Mini Player, Rotação Horizontal Automática e Filtro Hamburger
+
+- [x] **TASK-901**: Integração de busca contextual estrita via [ChannelRepository.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/live/ChannelRepository.kt)`::getChannelsFilteredPaged` em [SeriesScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesScreen.kt), [LiveScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/live/LiveScreen.kt) e [VodScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/vod/VodScreen.kt) permitindo buscar estritamente dentro da categoria selecionada.
+- [x] **TASK-902**: Barra de progresso interativa no mini player ([CompactPlayerView.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/CompactPlayerView.kt)) com timestamps formatados (`formatCompactDuration`), seekbar funcional e linha vermelha permanente no rodapé ([YouTubeProgressBar.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/designsystem/components/YouTubeProgressBar.kt)).
+- [x] **TASK-903**: Rotação horizontal automática ao entrar em tela cheia via `DisposableEffect` e `ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE` em [PlayerScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/PlayerScreen.kt), restaurando a orientação original portrait ao sair.
+- [x] **TASK-904**: Botão de filtro por categoria posicionado exclusivamente ao lado da barra de busca com ícone de menu hambúrguer (`Icons.Default.Menu`) e placeholder dinâmico, removendo o carrossel horizontal redundante de chips.
+- [x] **TASK-905**: Remoção do botão e banner de download externo na lista de séries, mantendo o download exclusivamente dentro da tela de detalhes da série ([SeriesDetailScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesDetailScreen.kt)).
+- [x] **TASK-906**: Testes unitários 100% aprovados, compilação do APK e deploy no Samsung Galaxy S23 Ultra (`SM-S918B`).
+
+
 

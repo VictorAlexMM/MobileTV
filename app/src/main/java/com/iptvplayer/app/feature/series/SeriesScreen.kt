@@ -20,9 +20,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Button
@@ -101,14 +101,12 @@ fun SeriesScreen(
     }
 
     val seriesPaging = remember(activePlaylistId, selectedCategory, searchQuery) {
-        when {
-            searchQuery.isNotBlank() -> repository.searchChannelsPaged(searchQuery)
-            activePlaylistId != null && selectedCategory != null -> {
-                repository.getChannelsByCategoryPaged(activePlaylistId, ContentType.SERIES, selectedCategory!!)
-            }
-            activePlaylistId != null -> repository.getChannelsPaged(activePlaylistId, ContentType.SERIES)
-            else -> repository.searchChannelsPaged("")
-        }
+        repository.getChannelsFilteredPaged(
+            playlistId = activePlaylistId,
+            contentType = ContentType.SERIES,
+            category = selectedCategory,
+            query = searchQuery.trim()
+        )
     }.collectAsLazyPagingItems()
 
     if (selectedSeriesDetails != null) {
@@ -144,7 +142,13 @@ fun SeriesScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Buscar séries...", color = TextMutedDark, fontSize = 14.sp) },
+                placeholder = {
+                    Text(
+                        text = if (selectedCategory != null) "Buscar em \"$selectedCategory\"..." else "Buscar séries...",
+                        color = TextMutedDark,
+                        fontSize = 14.sp
+                    )
+                },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -183,7 +187,7 @@ fun SeriesScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(if (selectedCategory != null) PrimaryIndigo.copy(alpha = 0.2f) else DarkSurface)
+                        .background(if (selectedCategory != null) PrimaryIndigo.copy(alpha = 0.25f) else DarkSurface)
                         .border(
                             width = 1.dp,
                             color = if (selectedCategory != null) PrimaryIndigo else DarkSurfaceVariant,
@@ -191,114 +195,10 @@ fun SeriesScreen(
                         )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Category,
-                        contentDescription = "Categorias",
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Filtro de Categorias",
                         tint = if (selectedCategory != null) PrimaryIndigo else Color.White
                     )
-                }
-            }
-        }
-
-        // Carrossel de Categorias
-        if (categories.isNotEmpty() && searchQuery.isBlank()) {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                item {
-                    FilterChip(
-                        selected = selectedCategory == null,
-                        onClick = { selectedCategory = null },
-                        label = { Text("Todas as Séries") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = PrimaryIndigo,
-                            selectedLabelColor = Color.White,
-                            containerColor = DarkSurface,
-                            labelColor = TextMutedDark
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = selectedCategory == null,
-                            borderColor = DarkSurfaceVariant,
-                            selectedBorderColor = PrimaryIndigo
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                }
-                items(categories) { category ->
-                    FilterChip(
-                        selected = selectedCategory == category,
-                        onClick = { selectedCategory = if (selectedCategory == category) null else category },
-                        label = { Text(category) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = PrimaryIndigo,
-                            selectedLabelColor = Color.White,
-                            containerColor = DarkSurface,
-                            labelColor = TextMutedDark
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = selectedCategory == category,
-                            borderColor = DarkSurfaceVariant,
-                            selectedBorderColor = PrimaryIndigo
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                }
-            }
-        }
-
-        // Ação de download da temporada inteira quando uma categoria de série estiver selecionada
-        if (selectedCategory != null && activePlaylistId != null) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(DarkSurfaceVariant)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = selectedCategory!!,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "Baixar todos os episódios desta temporada",
-                        fontSize = 11.sp,
-                        color = TextMutedDark
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = {
-                        scope.launch {
-                            try {
-                                val episodes = repository.getChannelsByGroup(activePlaylistId, ContentType.SERIES, selectedCategory!!)
-                                if (episodes.isEmpty()) {
-                                    snackbarHostState.showSnackbar("Nenhum episódio encontrado nesta temporada.")
-                                } else {
-                                    val count = downloadController.startBatchDownload(episodes)
-                                    snackbarHostState.showSnackbar("Iniciando download de $count episódios da temporada!")
-                                }
-                            } catch (e: Exception) {
-                                snackbarHostState.showSnackbar("Erro ao baixar temporada: ${e.localizedMessage}")
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Baixar Temporada", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -345,7 +245,6 @@ fun SeriesScreen(
                         val item = seriesPaging[index]
                         if (item != null) {
                             val downloadEntity by repository.observeDownload(item.id).collectAsState(initial = null)
-                            val isDownloaded = downloadEntity?.status == DownloadStatus.COMPLETED
 
                             ChannelCard(
                                 channel = item,
@@ -366,21 +265,6 @@ fun SeriesScreen(
                                 onFavoriteToggle = {
                                     scope.launch {
                                         repository.toggleFavorite(item.id, item.isFavorite)
-                                    }
-                                },
-                                onDownloadClick = {
-                                    scope.launch {
-                                        try {
-                                            downloadController.startDownload(
-                                                contentId = item.id,
-                                                title = item.name,
-                                                sourceUrl = item.streamUrl,
-                                                posterUrl = item.logoUrl
-                                            )
-                                            snackbarHostState.showSnackbar("Download iniciado: ${item.name}")
-                                        } catch (e: Exception) {
-                                            snackbarHostState.showSnackbar("Erro: ${e.localizedMessage}")
-                                        }
                                     }
                                 }
                             )

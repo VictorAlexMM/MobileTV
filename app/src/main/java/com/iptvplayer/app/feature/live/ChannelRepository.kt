@@ -48,6 +48,22 @@ class ChannelRepository(
         ).flow
     }
 
+    /**
+     * Busca paginada unificada com filtro estrito por contentType, categoria opcional e query de busca.
+     * Permite que a busca textual filtre exclusivamente dentro da categoria selecionada.
+     */
+    fun getChannelsFilteredPaged(
+        playlistId: Long?,
+        contentType: ContentType,
+        category: String?,
+        query: String
+    ): Flow<PagingData<ChannelEntity>> {
+        return Pager(
+            config = PagingConfig(pageSize = 40, enablePlaceholders = true),
+            pagingSourceFactory = { channelDao.getChannelsFilteredPaged(playlistId, contentType, category, query) }
+        ).flow
+    }
+
     fun getCategories(playlistId: Long, contentType: ContentType): Flow<List<String>> {
         return channelDao.getCategories(playlistId, contentType)
     }

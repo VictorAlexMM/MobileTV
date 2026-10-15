@@ -203,5 +203,20 @@
   - Unificar a resolução no método `ChannelRepository.loadSeriesDetails(item)` com feedback de carregamento suave na interface (`isLoadingSeriesDetails`).
 - **Consequências**: Resolução exata de episódios sem vazamento de outras séries, compatibilidade total tanto com playlists M3U brutas quanto servidores Xtream Codes, e integridade blindada por testes unitários.
 
+---
+
+### ADR-016: Busca Contextual por Categoria, Progressão no Mini Player, Rotação Automática Fullscreen e Filtro Hamburger
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: A busca textual anteriormente ignorava a categoria ativa; o mini player não fornecia seekbar interativa com tempos; o player em tela cheia não rotacionava automaticamente para landscape; o carrossel horizontal de categorias ocupava área vertical excessiva; e o botão de download de séries aparecia no card exterior fora do detalhe de episódios.
+- **Decisão**:
+  - Empregar `getChannelsFilteredPaged` do `ChannelRepository` nas telas de Ao Vivo, Filmes e Séries para filtrar estritamente a pesquisa textual dentro da categoria selecionada.
+  - Integrar seekbar interativa com timestamps (`formatCompactDuration`) nos controles do `CompactPlayerView`, além da barra vermelha permanente (`YouTubeProgressBar`) no rodapé do mini player.
+  - Aplicar `ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE` via `DisposableEffect` no `PlayerScreen`, assegurando que o player entre automaticamente em modo horizontal e retorne à orientação padrão ao sair.
+  - Consolidar a filtragem de categorias exclusivamente no botão hambúrguer (`Icons.Default.Menu`) adjacente à busca, com destaque visual ativo e placeholder contextual (`Buscar em "Categoria"...`), eliminando a barra redundante de chips.
+  - Remover a ação de download dos cards externos e banners na tela de séries, centralizando o download de episódios e temporadas completas estritamente dentro da tela de detalhes da série (`SeriesDetailScreen`).
+- **Consequências**: Ergonomia e usabilidade móvel aprimoradas, busca precisa sem ruído de categorias alheias, rotação imersiva automática e interface mais limpa.
+
+
 
 

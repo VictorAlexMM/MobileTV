@@ -51,7 +51,7 @@ fun ChannelCard(
     watchProgress: Float = 0f,
     onCardClick: () -> Unit,
     onFavoriteToggle: () -> Unit,
-    onDownloadClick: () -> Unit,
+    onDownloadClick: (() -> Unit)? = null,
     onScheduleClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -197,7 +197,7 @@ fun ChannelCard(
                             modifier = Modifier.size(22.dp)
                         )
                     }
-                } else if (channel.contentType != ContentType.LIVE && !isDownloaded) {
+                } else if (channel.contentType == ContentType.MOVIE && onDownloadClick != null && !isDownloaded) {
                     IconButton(onClick = onDownloadClick) {
                         Icon(
                             imageVector = Icons.Default.Download,

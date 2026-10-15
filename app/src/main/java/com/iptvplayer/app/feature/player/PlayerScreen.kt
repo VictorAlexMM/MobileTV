@@ -1,5 +1,7 @@
 package com.iptvplayer.app.feature.player
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.OptIn
@@ -91,6 +93,19 @@ fun PlayerScreen(
         if (showControls && uiState.isPlaying) {
             delay(4000)
             showControls = false
+        }
+    }
+
+    val activity = context as? Activity
+    DisposableEffect(isInPipMode) {
+        if (!isInPipMode) {
+            val originalOrientation = activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            onDispose {
+                activity?.requestedOrientation = originalOrientation
+            }
+        } else {
+            onDispose { }
         }
     }
 

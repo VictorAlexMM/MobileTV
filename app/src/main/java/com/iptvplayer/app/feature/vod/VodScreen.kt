@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -83,14 +84,12 @@ fun VodScreen(
     }
 
     val moviesPaging = remember(activePlaylistId, selectedCategory, searchQuery) {
-        when {
-            searchQuery.isNotBlank() -> repository.searchChannelsPaged(searchQuery)
-            activePlaylistId != null && selectedCategory != null -> {
-                repository.getChannelsByCategoryPaged(activePlaylistId, ContentType.MOVIE, selectedCategory!!)
-            }
-            activePlaylistId != null -> repository.getChannelsPaged(activePlaylistId, ContentType.MOVIE)
-            else -> repository.searchChannelsPaged("")
-        }
+        repository.getChannelsFilteredPaged(
+            playlistId = activePlaylistId,
+            contentType = ContentType.MOVIE,
+            category = selectedCategory,
+            query = searchQuery.trim()
+        )
     }.collectAsLazyPagingItems()
 
     val allProgress by repository.getAllWatchProgress().collectAsState(initial = emptyList())
@@ -108,7 +107,13 @@ fun VodScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Buscar filmes (VOD)...", color = com.iptvplayer.app.core.designsystem.theme.TextMutedDark, fontSize = 14.sp) },
+                placeholder = {
+                    Text(
+                        text = if (selectedCategory != null) "Buscar em \"$selectedCategory\"..." else "Buscar filmes (VOD)...",
+                        color = com.iptvplayer.app.core.designsystem.theme.TextMutedDark,
+                        fontSize = 14.sp
+                    )
+                },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = com.iptvplayer.app.core.designsystem.theme.TextMutedDark) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
@@ -129,43 +134,12 @@ fun VodScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(if (selectedCategory != null) PrimaryIndigo.copy(alpha = 0.2f) else com.iptvplayer.app.core.designsystem.theme.DarkSurface)
+                        .background(if (selectedCategory != null) PrimaryIndigo.copy(alpha = 0.25f) else com.iptvplayer.app.core.designsystem.theme.DarkSurface)
                 ) {
                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.Category,
-                        contentDescription = "Categorias",
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Filtro de Categorias",
                         tint = if (selectedCategory != null) PrimaryIndigo else Color.White
-                    )
-                }
-            }
-        }
-
-        if (categories.isNotEmpty() && searchQuery.isBlank()) {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                item {
-                    FilterChip(
-                        selected = selectedCategory == null,
-                        onClick = { selectedCategory = null },
-                        label = { Text("Todos os Filmes") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = PrimaryIndigo
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                }
-                items(categories) { category ->
-                    FilterChip(
-                        selected = selectedCategory == category,
-                        onClick = { selectedCategory = if (selectedCategory == category) null else category },
-                        label = { Text(category) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = PrimaryIndigo
-                        ),
-                        shape = RoundedCornerShape(20.dp)
                     )
                 }
             }

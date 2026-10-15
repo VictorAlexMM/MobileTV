@@ -186,5 +186,21 @@
   - [x] Compilação e instalação direta no Samsung Galaxy S23 Ultra (`SM-S918B`).
 - **Resultado**: APROVADO.
 
+---
+
+### CP-13: Busca Contextual por Categoria, Progressão no Mini Player, Rotação Automática Fullscreen e Filtro Hamburger
+- **Objetivo**: Confinar a busca textual estritamente dentro da categoria selecionada, enriquecer o mini player com barra de progresso interativa e timestamps, forçar rotação landscape automática no player em tela cheia, unificar o seletor de categorias no botão hambúrguer ao lado da busca e restringir os downloads de séries para o interior da série.
+- **Critérios de Validação**:
+  - [x] Busca textual em Ao Vivo, Filmes e Séries filtra estritamente pela categoria selecionada via `getChannelsFilteredPaged`.
+  - [x] Placeholder da busca indica claramente o contexto (`Buscar em "$selectedCategory"...` ou `Buscar...`).
+  - [x] Mini player (`CompactPlayerView`) com slider de progresso interativo, timestamps de tempo atual e duração total, e barra vermelha permanente no rodapé.
+  - [x] Player em tela cheia (`PlayerScreen`) força rotação horizontal automática (`SCREEN_ORIENTATION_SENSOR_LANDSCAPE`) ao entrar e restaura a orientação original ao sair.
+  - [x] Filtro de categoria unificado no botão ao lado da busca com ícone de menu hambúrguer (`Icons.Default.Menu`) e badge/cor de destaque quando ativo.
+  - [x] Carrossel horizontal redundante de chips removido para maximizar o espaço útil da tela.
+  - [x] Botão e banner de download removidos da lista externa de séries; download de episódios e temporadas mantido exclusivamente dentro de `SeriesDetailScreen`.
+  - [x] Testes unitários com 100% de aprovação (`BUILD SUCCESSFUL`).
+  - [x] Compilação do APK e instalação bem-sucedida via ADB no Samsung Galaxy S23 Ultra (`SM-S918B`).
+- **Resultado**: APROVADO.
+
 
 
