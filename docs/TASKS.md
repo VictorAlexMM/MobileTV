@@ -362,6 +362,25 @@
   - Compilação do APK de release/debug via `./gradlew assembleDebug`.
   - Instalação via ADB no dispositivo Samsung Galaxy S23 Ultra (`RQCW1067EEB`).
 
+---
+
+## [Fase 19] Player Minimalista na Tela Inicial e Otimização Visual
+- [x] **TASK-1901**: Remoção do estado vazio volumoso e do card gigante na tela inicial (`HomeScreen.kt`):
+  - Eliminação do card cinza gigante de estado vazio com ícone de 48dp e múltiplos botões quando não houver itens em andamento, permitindo que a tela inicial se mantenha limpa e foque diretamente nos atalhos de categorias e favoritos.
+  - Ocultação inteligente da seção "Continuar Assistindo" quando a lista estiver vazia.
+- [x] **TASK-1902**: Criação do componente `MinimalContinueWatchingCard` (~66dp de altura):
+  - Card horizontal compacto ocupando a largura útil com bordas arredondadas e contorno sutil (`Color.White.copy(alpha = 0.06f)`).
+  - Miniatura 16:9 compacta (82dp x 48dp) com overlay escuro suave, ícone play centralizado e a barra vermelha do YouTube (`YouTubeProgressBar`) no rodapé da imagem.
+  - Informações de título, subtítulo da categoria e progresso/duração formatados de maneira limpa e hierárquica.
+  - Exibição vertical limpa e organizada dos itens mais recentes (`take(3)`), evitando quebras de rolagem horizontal e mantendo os botões sempre à mão.
+- [x] **TASK-1903**: Preservação estrita de todas as ações de reprodução e histórico:
+  - **Continuar de onde parou**: Botão circular de destaque em `PrimaryIndigo` com `Icons.Default.PlayArrow`, iniciando o player com `startPositionMs = item.positionMs`. Tocar no próprio card também retoma a reprodução de onde parou.
+  - **Reiniciar do começo**: Botão circular compacto com `Icons.Default.Replay` (`onRestartClick`), iniciando a reprodução a partir de `0L`.
+  - **Apagar do histórico**: Botão circular compacto com `Icons.Default.Close` (`onRemoveClick`), invocando `database.watchProgressDao().deleteProgress(item.contentId)` e exibindo feedback via snackbar.
+- [x] **TASK-1904**: Modernização do banner de boas-vindas:
+  - Redução de padding excessivo e harmonização das cores para um estilo minimalista e integrado com o tema escuro.
+- [x] **TASK-1905**: Validação com testes unitários (`testDebugUnitTest` 100% aprovados) e compilação do APK de depuração (`assembleDebug` concluído com sucesso).
+
 
 
 

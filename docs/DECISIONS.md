@@ -413,6 +413,28 @@
     - Configurações: botão "Atualizar Lançamentos (Última: dd/MM HH:mm)" exibindo a data/hora exata do último sync.
 - **Consequências**: Os últimos lançamentos chegam automaticamente ao catálogo sem que o usuário precise fazer nada, o app continua ágil e responsivo desde o primeiro milissegundo de abertura, o cache nunca é zerado e os favoritos permanecem intactos.
 
+---
+
+### ADR-026: Player Minimalista na Tela Inicial e Preservação de Ações (Continuar, Reiniciar, Apagar)
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: A tela principal apresentava um card volumoso de 260dp de largura e altura considerável em um carrossel horizontal, além de um card cinza gigante de estado vazio com ícone de 48dp e múltiplos botões quando não havia reproduções em andamento. Essa disposição ocupava a primeira dobra da tela de smartphones, criando poluição visual e empurrando os atalhos de categorias para baixo. O usuário solicitou um design muito mais minimalista e organizado, sem o card gigante do player, mantendo estritamente as opções de continuar, reiniciar e apagar.
+- **Decisão**:
+  - **Eliminação do Estado Vazio Volumoso**:
+    - O card cinza gigante de estado vazio foi completamente removido. Quando `continueWatchingList.isEmpty()`, a seção de continuar assistindo é omitida de forma limpa, permitindo que o usuário visualize imediatamente os atalhos de Acesso Rápido e Canais Favoritos.
+  - **Componente `MinimalContinueWatchingCard` Compacto e Organizado**:
+    - Substituição do card vertical volumoso por um card horizontal moderno de ~66dp de altura com bordas arredondadas (`12.dp`) e contorno sutil (`BorderStroke`).
+    - Miniatura 16:9 compacta (82dp x 48dp) com overlay escuro, ícone play translúcido e a barra vermelha do YouTube (`YouTubeProgressBar`) no rodapé.
+    - Tipografia em hierarquia clara: Título em destaque, subtítulo com a categoria/episódio e tempo decorrido/restante com cor de destaque.
+    - Exibição vertical direta dos itens mais recentes (`take(3)`), sem quebras laterais de scroll.
+  - **Preservação Integral das 3 Ações Principais**:
+    1. **Continuar**: Botão circular de destaque em `PrimaryIndigo` com `Icons.Default.PlayArrow`, iniciando o player com `startPositionMs = item.positionMs`. O toque no próprio corpo do card também dispara a retomada no ponto exato.
+    2. **Reiniciar**: Botão circular compacto com `Icons.Default.Replay` (`onRestartClick`), iniciando a reprodução a partir de `0L`.
+    3. **Apagar**: Botão circular compacto com `Icons.Default.Close` (`onRemoveClick`), executando `database.watchProgressDao().deleteProgress(item.contentId)` e removendo o item do histórico com feedback instantâneo via Snackbar.
+  - **Banner Superior Clean**:
+    - Redução de padding do banner de boas-vindas para um visual mais sutil, integrado e de alto padrão visual.
+- **Consequências**: A tela inicial fica limpa, moderna e ergonômica. O usuário retoma seus vídeos com extrema facilidade em um único toque, pode reiniciar ou apagar rapidamente sem telas intermediárias, e o layout respira com muito mais harmonia.
+
 
 
 

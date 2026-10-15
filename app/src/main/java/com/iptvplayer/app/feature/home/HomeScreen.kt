@@ -1,5 +1,6 @@
 package com.iptvplayer.app.feature.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,7 +46,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -221,37 +221,40 @@ fun HomeScreen(
         contentPadding = PaddingValues(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Banner de Boas-Vindas e Status
+        // Banner de Boas-Vindas e Status Minimalista
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                PrimaryIndigo.copy(alpha = 0.35f),
-                                DarkSurface
-                            )
-                        )
-                    )
-                    .border(1.dp, PrimaryIndigo.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
-                    .padding(18.dp)
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(DarkSurface)
+                    .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Bem-vindo de volta",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
+                        Column {
+                            Text(
+                                text = "Bem-vindo de volta",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
                             )
-                        )
+                            Text(
+                                text = if (activePlaylist != null) {
+                                    "Playlist: ${activePlaylist?.name}"
+                                } else {
+                                    "Nenhuma playlist ativa selecionada"
+                                },
+                                style = MaterialTheme.typography.bodySmall.copy(color = TextMutedDark, fontSize = 11.sp)
+                            )
+                        }
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             // Botão de Sincronização Manual / Atualizar Lançamentos
@@ -276,46 +279,37 @@ fun HomeScreen(
                                             .then(if (isSyncing) Modifier.rotate(rotationAngle) else Modifier)
                                     )
                                 }
-                                Spacer(modifier = Modifier.width(6.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
                             }
 
                             // Status Chip
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(6.dp))
                                     .background(
-                                        if (isOfflineMode) StatusWarningAmber.copy(alpha = 0.2f)
-                                        else StatusDownloadedGreen.copy(alpha = 0.2f)
+                                        if (isOfflineMode) StatusWarningAmber.copy(alpha = 0.15f)
+                                        else StatusDownloadedGreen.copy(alpha = 0.15f)
                                     )
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .padding(horizontal = 7.dp, vertical = 3.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
                                         imageVector = if (isOfflineMode) Icons.Default.CloudOff else Icons.Default.Cloud,
                                         contentDescription = null,
                                         tint = if (isOfflineMode) StatusWarningAmber else StatusDownloadedGreen,
-                                        modifier = Modifier.size(13.dp)
+                                        modifier = Modifier.size(12.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = if (isOfflineMode) "Offline" else "Online",
                                         color = if (isOfflineMode) StatusWarningAmber else StatusDownloadedGreen,
                                         fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                 }
                             }
                         }
                     }
-
-                    Text(
-                        text = if (activePlaylist != null) {
-                            "Playlist: ${activePlaylist?.name}"
-                        } else {
-                            "Nenhuma playlist ativa selecionada"
-                        },
-                        style = MaterialTheme.typography.bodySmall.copy(color = TextMutedDark)
-                    )
 
                     // Indicador de Sincronização em Segundo Plano (Últimos lançamentos)
                     AnimatedVisibility(visible = isSyncing) {
@@ -323,13 +317,12 @@ fun HomeScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(PrimaryIndigo.copy(alpha = 0.25f))
-                                .border(1.dp, PrimaryIndigo.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                                .background(PrimaryIndigo.copy(alpha = 0.2f))
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(13.dp),
+                                modifier = Modifier.size(12.dp),
                                 color = PrimaryIndigo,
                                 strokeWidth = 2.dp
                             )
@@ -345,101 +338,52 @@ fun HomeScreen(
             }
         }
 
-        // Seção: Continuar Reproduzindo de Onde Parou
-        item {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+        // Seção: Continuar Reproduzindo de Onde Parou (Minimalista e Organizado)
+        if (continueWatchingList.isNotEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.PlayCircle,
-                            contentDescription = null,
-                            tint = Color(0xFFFF3333),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Continuar Assistindo",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        )
-                    }
-
-                    if (continueWatchingList.isNotEmpty()) {
-                        Text(
-                            text = "${continueWatchingList.size} em andamento",
-                            fontSize = 12.sp,
-                            color = TextMutedDark
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                if (continueWatchingList.isEmpty()) {
-                    // Estado Vazio Estilizado de Continuar Assistindo
-                    Card(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-                        shape = RoundedCornerShape(12.dp)
+                            .padding(horizontal = 16.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = Icons.Default.PlayCircleOutline,
+                                imageVector = Icons.Default.PlayCircle,
                                 contentDescription = null,
-                                tint = PrimaryIndigo,
-                                modifier = Modifier.size(48.dp)
+                                tint = Color(0xFFFF3333),
+                                modifier = Modifier.size(18.dp)
                             )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Nenhum conteúdo em andamento",
+                                text = "Continuar Assistindo",
                                 style = MaterialTheme.typography.titleSmall.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
                             )
-                            Text(
-                                text = "Comece a assistir seus filmes, séries ou canais. Seu progresso será salvo aqui para você continuar de onde parou!",
-                                style = MaterialTheme.typography.bodySmall.copy(color = TextMutedDark),
-                                textAlign = TextAlign.Center
-                            )
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(
-                                    onClick = { onNavigateTo(AppDestination.MOVIES) },
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text("Ver Filmes")
-                                }
-                                OutlinedButton(
-                                    onClick = { onNavigateTo(AppDestination.SERIES) },
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text("Ver Séries")
-                                }
-                            }
                         }
+
+                        Text(
+                            text = "${continueWatchingList.size} em andamento",
+                            fontSize = 11.sp,
+                            color = TextMutedDark
+                        )
                     }
-                } else {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(continueWatchingList, key = { it.contentId }) { item ->
-                            ContinueWatchingCard(
+                        continueWatchingList.take(3).forEach { item ->
+                            MinimalContinueWatchingCard(
                                 item = item,
                                 onResumeClick = {
                                     onPlayItem(
@@ -450,7 +394,7 @@ fun HomeScreen(
                                         item.positionMs
                                     )
                                     scope.launch {
-                                        snackbarHostState.showSnackbar("Continuando de ${formatTime(item.positionMs)}")
+                                        snackbarHostState.showSnackbar("Continuando ${item.title} de ${formatTime(item.positionMs)}")
                                     }
                                 },
                                 onRestartClick = {
@@ -462,13 +406,13 @@ fun HomeScreen(
                                         0L
                                     )
                                     scope.launch {
-                                        snackbarHostState.showSnackbar("Iniciando ${item.title} do começo")
+                                        snackbarHostState.showSnackbar("Reiniciando ${item.title} do começo")
                                     }
                                 },
                                 onRemoveClick = {
                                     scope.launch {
                                         database.watchProgressDao().deleteProgress(item.contentId)
-                                        snackbarHostState.showSnackbar("Removido do histórico")
+                                        snackbarHostState.showSnackbar("${item.title} removido do histórico")
                                     }
                                 }
                             )
@@ -732,11 +676,12 @@ fun HomeScreen(
 }
 
 /**
- * Card estilizado de Continuar Assistindo com Pôster 16:9, Barra Vermelha do YouTube
- * e botão direto para continuar a reprodução do ponto exato onde o usuário parou.
+ * Player minimalista e compacto na tela inicial para continuar assistindo.
+ * Altura compacta (~66dp), miniatura 16:9 com barra vermelha do YouTube,
+ * tempo e botões diretos de Continuar (Play), Reiniciar e Apagar do histórico.
  */
 @Composable
-private fun ContinueWatchingCard(
+private fun MinimalContinueWatchingCard(
     item: ContinueWatchingItem,
     onResumeClick: () -> Unit,
     onRestartClick: () -> Unit,
@@ -745,18 +690,25 @@ private fun ContinueWatchingCard(
 ) {
     Card(
         modifier = modifier
-            .width(260.dp)
+            .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .clickable { onResumeClick() },
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.06f)),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Column {
-            // Imagem 16:9 com Barra do YouTube
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 1. Miniatura 16:9 compacta com Barra de Progresso do YouTube
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
+                    .width(82.dp)
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(8.dp))
                     .background(DarkSurfaceVariant)
             ) {
                 if (!item.posterUrl.isNullOrBlank()) {
@@ -779,142 +731,145 @@ private fun ContinueWatchingCard(
                             },
                             contentDescription = null,
                             tint = TextMutedDark,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 }
 
-                // Gradiente escuro para legibilidade
+                // Overlay escuro suave
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.65f))
-                            )
-                        )
+                        .background(Color.Black.copy(alpha = 0.25f))
                 )
 
-                // Badge de posição
+                // Ícone play sutil no centro
                 Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color.Black.copy(alpha = 0.75f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .size(20.dp)
+                        .align(Alignment.Center)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.6f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = if (item.durationMs > 0) {
-                            "${formatTime(item.positionMs)} / ${formatTime(item.durationMs)}"
-                        } else {
-                            formatTime(item.positionMs)
-                        },
-                        fontSize = 10.sp,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(12.dp)
                     )
                 }
 
-                // Botão de Play central translúcido
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Continuar",
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .align(Alignment.Center)
-                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                        .padding(6.dp)
-                )
-
-                // Barra Vermelha do YouTube embutida na base do card
+                // Barra Vermelha do YouTube na base da miniatura
                 YouTubeProgressBar(
                     progressFraction = item.progressFraction,
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
 
-            // Informações e Ações
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // 2. Informações de Título, Categoria e Progresso
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp)
+                    .weight(1f)
+                    .padding(end = 6.dp),
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = item.title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Text(
-                    text = item.subtitle,
-                    style = MaterialTheme.typography.bodySmall.copy(color = TextMutedDark),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Spacer(modifier = Modifier.height(2.dp))
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Botões de Ação: Continuar de onde parou e Opções
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Button(
-                        onClick = onResumeClick,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Continuar",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        text = item.subtitle,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = TextMutedDark,
+                            fontSize = 11.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
 
-                    // Botão para reiniciar do começo
-                    IconButton(
-                        onClick = onRestartClick,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(DarkSurfaceVariant)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Replay,
-                            contentDescription = "Reiniciar do Começo",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
+                    val timeText = if (item.durationMs > 0) {
+                        "${formatTime(item.positionMs)} / ${formatTime(item.durationMs)}"
+                    } else {
+                        formatTime(item.positionMs)
                     }
+                    Text(
+                        text = timeText,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Color(0xFFFF5252),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 10.sp
+                        )
+                    )
+                }
+            }
 
-                    // Botão para remover do histórico
-                    IconButton(
-                        onClick = onRemoveClick,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(DarkSurfaceVariant)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Remover do Histórico",
-                            tint = TextMutedDark,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+            // 3. Botões de Ação Direta (Continuar, Reiniciar, Apagar)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Play / Continuar
+                IconButton(
+                    onClick = onResumeClick,
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(PrimaryIndigo)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Continuar de onde parou",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                // Reiniciar do começo
+                IconButton(
+                    onClick = onRestartClick,
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .background(DarkSurfaceVariant.copy(alpha = 0.7f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Replay,
+                        contentDescription = "Reiniciar do começo",
+                        tint = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
+
+                // Apagar do histórico
+                IconButton(
+                    onClick = onRemoveClick,
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .background(DarkSurfaceVariant.copy(alpha = 0.7f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Apagar do histórico",
+                        tint = TextMutedDark,
+                        modifier = Modifier.size(15.dp)
+                    )
                 }
             }
         }

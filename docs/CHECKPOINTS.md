@@ -352,6 +352,22 @@
   - [x] Instalação validada via ADB no Samsung Galaxy S23 Ultra (`RQCW1067EEB` - `Success`).
 - **Resultado**: APROVADO.
 
+---
+
+### CP-23: Player Minimalista na Tela Inicial e Preservação de Ações
+- **Objetivo**: Substituir o card gigante de "Continuar Assistindo" e o estado vazio volumoso da tela inicial por uma apresentação minimalista, compacta e elegante, preservando rigorosamente as funções de continuar de onde parou, reiniciar e apagar do histórico.
+- **Critérios de Validação**:
+  - [x] Remoção do card cinza gigante de estado vazio com ícone de 48dp da tela inicial.
+  - [x] Seção "Continuar Assistindo" ocultada com inteligência quando não houver reproduções em andamento.
+  - [x] Novo componente `MinimalContinueWatchingCard` com altura compacta (~66dp), miniatura 16:9, barra vermelha do YouTube e layout horizontal limpo.
+  - [x] Opção "Continuar" preservada tanto no botão de play circular em destaque quanto ao tocar no próprio card (`startPositionMs = item.positionMs`).
+  - [x] Opção "Reiniciar" preservada no botão circular `Replay` (`startPositionMs = 0L`).
+  - [x] Opção "Apagar" preservada no botão circular `Close` (`watchProgressDao.deleteProgress`).
+  - [x] Banner de boas-vindas modernizado com dimensões balanceadas e visual clean.
+  - [x] Testes unitários 100% aprovados (`BUILD SUCCESSFUL`).
+  - [x] Compilação do APK de depuração realizada com sucesso (`assembleDebug`).
+- **Resultado**: APROVADO.
+
 
 
 
