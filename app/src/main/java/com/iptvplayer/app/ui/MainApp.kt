@@ -39,6 +39,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import kotlinx.coroutines.Dispatchers
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -108,6 +110,9 @@ fun MainApp(
     val isOnlineAllowed by networkGate.isOnlineAllowed.collectAsState()
     val isAppOffline = !isOnlineAllowed
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     // Sincronização automática da playlist ativa no primeiro carregamento
     androidx.compose.runtime.LaunchedEffect(allPlaylists, activePlaylistId) {
         if (activePlaylistId == null && allPlaylists.isNotEmpty()) {
@@ -115,8 +120,17 @@ fun MainApp(
         }
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    // Auto-atualização de catálogo em segundo plano sempre ao abrir o aplicativo (sem apagar o cache existente)
+    // Busca os últimos lançamentos de filmes, séries e canais sem interromper ou bloquear a navegação
+    var hasAutoSyncedOnLaunch by rememberSaveable { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(activePlaylistId, isAppOffline) {
+        if (activePlaylistId != null && !isAppOffline && !hasAutoSyncedOnLaunch) {
+            hasAutoSyncedOnLaunch = true
+            scope.launch(Dispatchers.IO) {
+                playlistRepository.syncPlaylist(activePlaylistId!!)
+            }
+        }
+    }
 
     var lastBackPressTime by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
     val activity = context as? Activity
@@ -285,7 +299,8 @@ fun MainApp(
                                 onPlayItem = { id, title, url, isDownloaded, startPos ->
                                     handlePlay(id, title, url, isDownloaded, startPos)
                                 },
-                                snackbarHostState = snackbarHostState
+                                snackbarHostState = snackbarHostState,
+                                playlistRepository = playlistRepository
                             )
                         }
                         AppDestination.LIVE -> {

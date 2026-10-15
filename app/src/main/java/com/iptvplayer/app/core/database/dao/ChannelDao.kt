@@ -141,6 +141,9 @@ interface ChannelDao {
     @Query("SELECT * FROM channels WHERE isFavorite = 1 ORDER BY name ASC")
     fun getFavoriteChannels(): Flow<List<ChannelEntity>>
 
+    @Query("SELECT id FROM channels WHERE playlistId = :playlistId AND isFavorite = 1")
+    suspend fun getFavoriteChannelIds(playlistId: Long): List<String>
+
     @Query("SELECT * FROM channels WHERE id = :id LIMIT 1")
     suspend fun getChannelById(id: String): ChannelEntity?
 

@@ -339,6 +339,30 @@
   - Compilação do APK de release/debug via `./gradlew assembleDebug`.
   - Instalação no Samsung Galaxy S23 Ultra (`RQCW1067EEB`) via ADB.
 
+---
+
+## Fase 18 — Sincronização Automática ao Abrir o App Sem Apagar o Cache (Últimos Lançamentos)
+
+- [x] **TASK-1801**: Criação do método de sincronização incremental e não-destrutiva em [PlaylistRepository.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/playlists/PlaylistRepository.kt):
+  - Implementação de `syncPlaylist(playlistId: Long)`: busca novos canais, filmes VOD e séries sem executar `deleteChannelsByPlaylist` ou `replacePlaylistChannels`.
+  - Preservação integral do cache existente e funcionamento ininterrupto da interface enquanto o sync processa em background.
+  - Preservação estrita dos canais favoritos do usuário via `getFavoriteChannelIds(playlistId)`.
+  - Inserção em lotes seguros de 500 itens (`chunked(500)`) via `insertChannels(batch)` com `OnConflictStrategy.REPLACE`, inserindo novos lançamentos e atualizando itens existentes.
+  - Atualização do timestamp de sincronização `updateSyncTime` em `PlaylistDao`.
+  - Exposição de estados reativos `isSyncing: StateFlow<Boolean>` e `syncStatus: StateFlow<String?>`.
+- [x] **TASK-1802**: Disparo automático na inicialização da aplicação em [MainApp.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/ui/MainApp.kt):
+  - Adição de `LaunchedEffect(activePlaylistId, isAppOffline)` com flag persistente de ciclo de vida `rememberSaveable { mutableStateOf(false) }`, disparando o auto-sync em `Dispatchers.IO` assim que o app é aberto e a playlist ativa é identificada.
+  - Blindagem contra falhas: se estiver offline, cancela silenciosamente sem erros; se a conexão oscilar, o cache existente continua 100% acessível.
+- [x] **TASK-1803**: Feedback visual e controle manual em [HomeScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/home/HomeScreen.kt) e [SettingsScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/settings/SettingsScreen.kt):
+  - Botão de sincronização manual com rotação contínua no banner de boas-vindas da tela inicial.
+  - Barra de progresso elegante `AnimatedVisibility(isSyncing)` mostrando o status da busca de últimos lançamentos.
+  - Botão `OutlinedButton` "Atualizar Lançamentos (Última: dd/MM HH:mm)" no card de playlists das Configurações.
+- [x] **TASK-1804**: Validação, build e deploy:
+  - Testes unitários com `./gradlew testDebugUnitTest` 100% aprovados.
+  - Compilação do APK de release/debug via `./gradlew assembleDebug`.
+  - Instalação via ADB no dispositivo Samsung Galaxy S23 Ultra (`RQCW1067EEB`).
+
+
 
 
 

@@ -35,12 +35,14 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -86,6 +88,7 @@ import com.iptvplayer.app.feature.downloads.DownloadModule
 import com.iptvplayer.app.feature.playlists.PlaylistRepository
 import com.iptvplayer.app.feature.playlists.PlaylistsScreen
 import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -105,6 +108,9 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
 
     var showPlaylistsSubScreen by remember { mutableStateOf(false) }
+
+    val isSyncing by (playlistRepository?.isSyncing ?: kotlinx.coroutines.flow.MutableStateFlow(false)).collectAsState()
+    val syncStatus by (playlistRepository?.syncStatus ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsState()
 
     val offlineMode by settingsRepository.offlineModeEnabled.collectAsState(initial = false)
     val wifiOnly by settingsRepository.wifiOnlyDownloads.collectAsState(initial = true)
@@ -252,6 +258,49 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text("Gerenciar Playlists", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            if (activePlaylist != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        if (!isSyncing && !offlineMode) {
+                                            scope.launch(Dispatchers.IO) {
+                                                playlistRepository?.syncPlaylist(activePlaylist.id)
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = !isSyncing && !offlineMode,
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                                ) {
+                                    if (isSyncing) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(15.dp),
+                                            color = PrimaryIndigo,
+                                            strokeWidth = 2.dp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(syncStatus ?: "Sincronizando...", fontSize = 12.sp)
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.Sync,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = PrimaryIndigo
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        val syncTime = activePlaylist.lastSyncAt
+                                        val lastSyncText = if (syncTime != null && syncTime > 0L) {
+                                            val date = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date(syncTime))
+                                            "Atualizar Lançamentos (Última: $date)"
+                                        } else {
+                                            "Sincronizar Últimos Lançamentos"
+                                        }
+                                        Text(lastSyncText, fontSize = 12.sp)
+                                    }
+                                }
                             }
                         }
                     }

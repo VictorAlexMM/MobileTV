@@ -32,12 +32,20 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.PlayCircleOutline
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.rotate
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -74,6 +82,7 @@ import com.iptvplayer.app.core.designsystem.theme.StatusWarningAmber
 import com.iptvplayer.app.core.designsystem.theme.TextMutedDark
 import com.iptvplayer.app.feature.downloads.DownloadController
 import com.iptvplayer.app.feature.live.ChannelRepository
+import com.iptvplayer.app.feature.playlists.PlaylistRepository
 import com.iptvplayer.app.ui.AppDestination
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -102,9 +111,23 @@ fun HomeScreen(
     onNavigateTo: (AppDestination) -> Unit,
     onPlayItem: (id: String, title: String, streamUrl: String, isDownloaded: Boolean, startPositionMs: Long) -> Unit,
     snackbarHostState: SnackbarHostState,
+    playlistRepository: PlaylistRepository? = null,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
+
+    val isSyncing by (playlistRepository?.isSyncing ?: kotlinx.coroutines.flow.MutableStateFlow(false)).collectAsState()
+    val syncStatus by (playlistRepository?.syncStatus ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsState()
+
+    val infiniteTransition = rememberInfiniteTransition(label = "SyncRotate")
+    val rotationAngle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = androidx.compose.animation.core.LinearEasing)
+        ),
+        label = "Rotation"
+    )
 
     // 1. Monitora o progresso de visualização salvo no Room
     val recentlyWatched by database.watchProgressDao().getRecentlyWatched(30).collectAsState(initial = emptyList())
@@ -230,30 +253,57 @@ fun HomeScreen(
                             )
                         )
 
-                        // Status Chip
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    if (isOfflineMode) StatusWarningAmber.copy(alpha = 0.2f)
-                                    else StatusDownloadedGreen.copy(alpha = 0.2f)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = if (isOfflineMode) Icons.Default.CloudOff else Icons.Default.Cloud,
-                                    contentDescription = null,
-                                    tint = if (isOfflineMode) StatusWarningAmber else StatusDownloadedGreen,
-                                    modifier = Modifier.size(13.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = if (isOfflineMode) "Offline" else "Online",
-                                    color = if (isOfflineMode) StatusWarningAmber else StatusDownloadedGreen,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Botão de Sincronização Manual / Atualizar Lançamentos
+                            if (activePlaylistId != null && !isOfflineMode) {
+                                IconButton(
+                                    onClick = {
+                                        if (!isSyncing) {
+                                            scope.launch(Dispatchers.IO) {
+                                                playlistRepository?.syncPlaylist(activePlaylistId)
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.size(32.dp),
+                                    enabled = !isSyncing
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Sync,
+                                        contentDescription = "Atualizar Catálogo",
+                                        tint = if (isSyncing) PrimaryIndigo else Color.White.copy(alpha = 0.8f),
+                                        modifier = Modifier
+                                            .size(18.dp)
+                                            .then(if (isSyncing) Modifier.rotate(rotationAngle) else Modifier)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+
+                            // Status Chip
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isOfflineMode) StatusWarningAmber.copy(alpha = 0.2f)
+                                        else StatusDownloadedGreen.copy(alpha = 0.2f)
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = if (isOfflineMode) Icons.Default.CloudOff else Icons.Default.Cloud,
+                                        contentDescription = null,
+                                        tint = if (isOfflineMode) StatusWarningAmber else StatusDownloadedGreen,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (isOfflineMode) "Offline" else "Online",
+                                        color = if (isOfflineMode) StatusWarningAmber else StatusDownloadedGreen,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
@@ -266,6 +316,31 @@ fun HomeScreen(
                         },
                         style = MaterialTheme.typography.bodySmall.copy(color = TextMutedDark)
                     )
+
+                    // Indicador de Sincronização em Segundo Plano (Últimos lançamentos)
+                    AnimatedVisibility(visible = isSyncing) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(PrimaryIndigo.copy(alpha = 0.25f))
+                                .border(1.dp, PrimaryIndigo.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(13.dp),
+                                color = PrimaryIndigo,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = syncStatus ?: "Atualizando catálogo com últimos lançamentos...",
+                                fontSize = 11.sp,
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
         }

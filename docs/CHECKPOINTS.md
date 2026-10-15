@@ -335,6 +335,24 @@
   - [x] Instalação via ADB no dispositivo Samsung Galaxy S23 Ultra (`RQCW1067EEB` - `Success`).
 - **Resultado**: APROVADO.
 
+---
+
+### CP-22: Sincronização Automática ao Abrir o App Sem Apagar o Cache (Últimos Lançamentos)
+- **Objetivo**: Garantir que o aplicativo busque e insira automaticamente os últimos lançamentos do provedor IPTV sempre que for aberto, sem apagar o cache local do Room, sem resetar os favoritos do usuário e sem travar a navegação em modo offline.
+- **Critérios de Validação**:
+  - [x] Implementação de `PlaylistRepository.syncPlaylist` não-destrutiva (sem `deleteChannelsByPlaylist`).
+  - [x] Inserção incremental via lotes de 500 itens com `OnConflictStrategy.REPLACE`.
+  - [x] Preservação integral do status `isFavorite` através de `ChannelDao.getFavoriteChannelIds`.
+  - [x] Disparo automático em background na abertura do app via `MainApp.kt` com `rememberSaveable`.
+  - [x] Tolerância a falhas de rede: o app continua funcionando com o cache existente se não houver internet.
+  - [x] Feedback visual animado em `HomeScreen.kt` com status e botão de sincronização manual.
+  - [x] Botão de atualização manual com timestamp no card de playlists de `SettingsScreen.kt`.
+  - [x] Testes unitários 100% aprovados (`BUILD SUCCESSFUL`).
+  - [x] Compilação do APK concluída com sucesso (`assembleDebug`).
+  - [x] Instalação validada via ADB no Samsung Galaxy S23 Ultra (`RQCW1067EEB` - `Success`).
+- **Resultado**: APROVADO.
+
+
 
 
 

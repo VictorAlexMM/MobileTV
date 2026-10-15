@@ -12,6 +12,9 @@ import com.iptvplayer.app.parser.m3u.M3UParser
 import com.iptvplayer.app.parser.xtream.XtreamApiService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import okhttp3.Request
 import java.io.InputStream
@@ -33,6 +36,12 @@ class PlaylistRepository(
     private val playlistDao = database.playlistDao()
     private val channelDao = database.channelDao()
     private val okHttpClient = NetworkClient.createOkHttpClient()
+
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
+    private val _syncStatus = MutableStateFlow<String?>(null)
+    val syncStatus: StateFlow<String?> = _syncStatus.asStateFlow()
 
     fun getAllPlaylists(): Flow<List<PlaylistEntity>> = playlistDao.getAllPlaylists()
 
@@ -238,5 +247,163 @@ class PlaylistRepository(
     suspend fun deletePlaylist(id: Long) = withContext(Dispatchers.IO) {
         channelDao.deleteChannelsByPlaylist(id)
         playlistDao.deleteById(id)
+    }
+
+    /**
+     * Sincronização incremental e NÃO-DESTRUTIVA do catálogo da playlist.
+     * Atualiza os canais, filmes e séries com os últimos lançamentos do servidor
+     * SEM apagar o cache local existente e preservando todos os favoritos do usuário.
+     */
+    suspend fun syncPlaylist(playlistId: Long): Boolean = withContext(Dispatchers.IO) {
+        if (_isSyncing.value) return@withContext false
+        if (!networkGate.canAccessNetwork()) {
+            return@withContext false
+        }
+
+        val playlist = playlistDao.getPlaylistById(playlistId) ?: return@withContext false
+
+        _isSyncing.value = true
+        _syncStatus.value = "Verificando lançamentos e atualizações..."
+
+        try {
+            val favoriteIds = channelDao.getFavoriteChannelIds(playlistId).toSet()
+
+            when (playlist.type) {
+                PlaylistType.XTREAM -> {
+                    val rawUrl = playlist.url ?: return@withContext false
+                    val cleanServer = if (rawUrl.endsWith("/")) rawUrl.trim() else "${rawUrl.trim()}/"
+                    val username = playlist.username?.trim().orEmpty()
+                    val password = playlist.password?.trim().orEmpty()
+
+                    val retrofit = NetworkClient.createRetrofit(cleanServer, okHttpClient)
+                    val api = retrofit.create(XtreamApiService::class.java)
+
+                    // 1. Atualizar Canais Ao Vivo
+                    _syncStatus.value = "Sincronizando canais ao vivo..."
+                    try {
+                        val liveCats = try {
+                            api.getLiveCategories(username, password).associate { it.categoryId to it.categoryName.trim() }
+                        } catch (_: Exception) {
+                            emptyMap()
+                        }
+                        val liveStreams = api.getLiveStreams(username, password)
+                        val liveChannels = liveStreams.map { item ->
+                            val catName = item.categoryId?.let { liveCats[it] }?.ifBlank { null } ?: "Canais Gerais"
+                            val channelId = "xtream_${playlistId}_live_${item.streamId}"
+                            ChannelEntity(
+                                id = channelId,
+                                playlistId = playlistId,
+                                name = item.name,
+                                logoUrl = item.streamIcon,
+                                groupTitle = catName,
+                                streamUrl = "${cleanServer}live/$username/$password/${item.streamId}.m3u8",
+                                tvgId = item.epgChannelId,
+                                contentType = ContentType.LIVE,
+                                isFavorite = favoriteIds.contains(channelId)
+                            )
+                        }
+                        liveChannels.chunked(500).forEach { batch ->
+                            channelDao.insertChannels(batch)
+                        }
+                    } catch (_: Exception) {}
+
+                    // 2. Atualizar Filmes VOD (Onde residem os novos lançamentos de filmes)
+                    _syncStatus.value = "Buscando últimos lançamentos de filmes..."
+                    try {
+                        val vodCats = try {
+                            api.getVodCategories(username, password).associate { it.categoryId to it.categoryName.trim() }
+                        } catch (_: Exception) {
+                            emptyMap()
+                        }
+                        val vodStreams = api.getVodStreams(username, password)
+                        val vodChannels = vodStreams.map { item ->
+                            val ext = item.containerExtension?.ifBlank { "mp4" } ?: "mp4"
+                            val catName = item.categoryId?.let { vodCats[it] }?.ifBlank { null } ?: "Filmes Gerais"
+                            val channelId = "xtream_${playlistId}_vod_${item.streamId}"
+                            ChannelEntity(
+                                id = channelId,
+                                playlistId = playlistId,
+                                name = item.name,
+                                logoUrl = item.streamIcon,
+                                groupTitle = catName,
+                                streamUrl = "${cleanServer}movie/$username/$password/${item.streamId}.$ext",
+                                tvgId = null,
+                                contentType = ContentType.MOVIE,
+                                isFavorite = favoriteIds.contains(channelId)
+                            )
+                        }
+                        vodChannels.chunked(500).forEach { batch ->
+                            channelDao.insertChannels(batch)
+                        }
+                    } catch (_: Exception) {}
+
+                    // 3. Atualizar Séries (Onde residem as novas séries e episódios)
+                    _syncStatus.value = "Buscando novas séries e episódios..."
+                    try {
+                        val seriesCats = try {
+                            api.getSeriesCategories(username, password).associate { it.categoryId to it.categoryName.trim() }
+                        } catch (_: Exception) {
+                            emptyMap()
+                        }
+                        val seriesStreams = api.getSeries(username, password)
+                        val seriesChannels = seriesStreams.map { item ->
+                            val catName = item.categoryId?.let { seriesCats[it] }?.ifBlank { null } ?: "Séries Gerais"
+                            val channelId = "xtream_${playlistId}_series_${item.seriesId}"
+                            ChannelEntity(
+                                id = channelId,
+                                playlistId = playlistId,
+                                name = item.name,
+                                logoUrl = item.cover,
+                                groupTitle = catName,
+                                streamUrl = "${cleanServer}series/$username/$password/${item.seriesId}",
+                                tvgId = null,
+                                contentType = ContentType.SERIES,
+                                isFavorite = favoriteIds.contains(channelId)
+                            )
+                        }
+                        seriesChannels.chunked(500).forEach { batch ->
+                            channelDao.insertChannels(batch)
+                        }
+                    } catch (_: Exception) {}
+
+                    playlistDao.updateSyncTime(playlistId, System.currentTimeMillis())
+                }
+
+                PlaylistType.M3U_URL -> {
+                    val url = playlist.url
+                    if (!url.isNullOrBlank()) {
+                        _syncStatus.value = "Baixando catálogo M3U atualizado..."
+                        val request = Request.Builder().url(url.trim()).build()
+                        val response = okHttpClient.newCall(request).execute()
+                        if (response.isSuccessful) {
+                            response.body?.byteStream()?.use { stream ->
+                                M3UParser.parseStreaming(
+                                    inputStream = stream,
+                                    playlistId = playlistId,
+                                    batchSize = 500
+                                ) { batch ->
+                                    val mappedBatch = if (favoriteIds.isNotEmpty()) {
+                                        batch.map { if (favoriteIds.contains(it.id)) it.copy(isFavorite = true) else it }
+                                    } else batch
+                                    channelDao.insertChannels(mappedBatch)
+                                }
+                            }
+                            playlistDao.updateSyncTime(playlistId, System.currentTimeMillis())
+                        }
+                    }
+                }
+
+                PlaylistType.M3U_FILE, PlaylistType.STALKER -> {
+                    // Arquivos locais ou stalker estáticos
+                }
+            }
+            _syncStatus.value = "Catálogo atualizado com sucesso"
+            true
+        } catch (e: Exception) {
+            _syncStatus.value = "Falha ao sincronizar: ${e.localizedMessage ?: "Erro de rede"}"
+            false
+        } finally {
+            _isSyncing.value = false
+        }
     }
 }

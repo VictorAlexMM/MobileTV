@@ -392,6 +392,28 @@
     - Ao tocar no botão, a interface abre a sub-tela de gerenciamento completo de playlists ([PlaylistsScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/playlists/PlaylistsScreen.kt)) em camada com botão de retorno dedicado e suporte a `BackHandler`.
 - **Consequências**: A interface principal torna-se muito mais acolhedora e prática no dia a dia, permitindo retomar qualquer conteúdo instantaneamente de onde parou com um único clique ou reiniciar do início, ao mesmo tempo em que a configuração de playlists fica devidamente abrigada em Ajustes.
 
+---
+
+### ADR-025: Sincronização Incremental Não-Destrutiva ao Abrir o App (Últimos Lançamentos)
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Para que o usuário tenha sempre acesso aos últimos lançamentos de filmes, séries e canais adicionados pelos provedores IPTV, o catálogo precisa ser atualizado a cada inicialização da aplicação. No entanto, essa atualização **não pode apagar o cache existente** (para evitar telas em branco ou indisponibilidade enquanto o download ocorre), **não pode resetar os canais favoritos** do usuário e **não pode bloquear a navegação** caso o usuário esteja sem internet ou em rede lenta.
+- **Decisão**:
+  - **Sincronização Incremental Não-Destrutiva (`PlaylistRepository.syncPlaylist`)**:
+    - Eliminação completa de chamadas `deleteChannelsByPlaylist` ou `replacePlaylistChannels` durante as sincronizações.
+    - O cache local do Room permanece 100% ativo e disponível para consulta e reprodução imediata.
+    - Antes de qualquer inserção, o repositório consulta `getFavoriteChannelIds(playlistId)` e preserva o estado `isFavorite = true` de cada canal previamente marcado pelo usuário.
+    - Novas mídias (lançamentos) são inseridas e itens existentes atualizados via lotes de 500 itens (`chunked(500)`) utilizando `OnConflictStrategy.REPLACE`.
+    - Atualização do timestamp `lastSyncAt` na entidade da playlist.
+  - **Disparo Silencioso em Background ao Abrir o App (`MainApp.kt`)**:
+    - Adicionado `LaunchedEffect(activePlaylistId, isAppOffline)` com flag `hasAutoSyncedOnLaunch` via `rememberSaveable`.
+    - Ao abrir a aplicação, se houver playlist ativa e rede disponível, a sincronização é disparada em segundo plano em `Dispatchers.IO`.
+  - **Transparência e Controle Manual (`HomeScreen.kt` & `SettingsScreen.kt`)**:
+    - Tela de Início: exibe indicador elegante `AnimatedVisibility(isSyncing)` com o status atual da busca ("Buscando últimos lançamentos de filmes...", etc.) e botão de sincronização manual com rotação contínua.
+    - Configurações: botão "Atualizar Lançamentos (Última: dd/MM HH:mm)" exibindo a data/hora exata do último sync.
+- **Consequências**: Os últimos lançamentos chegam automaticamente ao catálogo sem que o usuário precise fazer nada, o app continua ágil e responsivo desde o primeiro milissegundo de abertura, o cache nunca é zerado e os favoritos permanecem intactos.
+
+
 
 
 
