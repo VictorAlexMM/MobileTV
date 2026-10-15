@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">IPTV Player</string>
+    <string name="app_name">MobileTV</string>
     <string name="downloads_channel_name">Downloads de Mídia</string>
     <string name="downloads_channel_description">Notificações de progresso de downloads para reprodução offline</string>
     <string name="recordings_channel_name">Gravações de Transmissão</string>

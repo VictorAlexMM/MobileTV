@@ -1,4 +1,4 @@
-# MobileTV - IPTV Player Android Offline
+# MobileTV - MobileTV Android Offline
 
 > Player IPTV nativo para Android com suporte a listas M3U/M3U8 e Xtream Codes, com o grande diferencial de **download e reprodução 100% offline via AndroidX Media3 (ExoPlayer)**.
 

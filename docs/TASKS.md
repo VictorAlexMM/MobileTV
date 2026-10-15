@@ -1,4 +1,4 @@
-# Plano de Tarefas (Tasks) - IPTV Player Android Offline
+# Plano de Tarefas (Tasks) - MobileTV Android Offline
 
 > Acompanhamento de execução detalhado baseado na especificação [IPTV_Android_Offline_Spec.md](file:///c:/Users/victor.mota/Desktop/New/app/docs/IPTV_Android_Offline_Spec.md).
 
@@ -234,6 +234,22 @@
   - Configuração de `customCacheKey = sourceUrl` no `DownloadRequest.Builder`.
 - [x] **TASK-1204**: Ação imediata de reprodução no botão da Netflix em [SeriesDetailScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesDetailScreen.kt) ao clicar em downloads já concluídos (`DownloadStatus.COMPLETED`).
 - [x] **TASK-1205**: Validação com testes unitários 100% aprovados, compilação do APK (`assembleDebug`) e instalação bem-sucedida no Samsung Galaxy S23 Ultra (`SM-S918B`).
+
+---
+
+## Fase 13 — Reprodução 100% Offline Garantida e Encerramento Imediato do Reprodutor ao Sair
+
+- [x] **TASK-1301**: Implementação de `buildOfflinePlaybackDataSourceFactory` com `upstream = null` em [DownloadModule.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/downloads/DownloadModule.kt) garantindo que mídias baixadas não façam nenhuma checagem ou requisição de rede.
+- [x] **TASK-1302**: Seleção de fonte de mídia inteligente no [PlayerEngine.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/PlayerEngine.kt):
+  - Uso de `offlineMediaSourceFactory` quando `isOfflinePlayback == true`, lendo estritamente do cache local.
+  - Uso de `onlineMediaSourceFactory` apenas quando streaming online.
+  - Implementação de `playerEngine.stop()` descarregando completamente mídias e parando os loops de progresso.
+- [x] **TASK-1303**: Encerramento e fechamento total do reprodutor ao sair da tela de reprodução em [MainApp.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/ui/MainApp.kt) e [PlayerScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/PlayerScreen.kt):
+  - `onBackClick` na tela cheia fecha o player (`isPlayingFullscreen = false`, `isCompactPlayerVisible = false`) e chama `playerEngine.stop()`.
+  - `onDispose` de `PlayerScreen` chama `playerEngine.stop()`.
+  - `onClosePlayer` do `CompactPlayerView` descarrega a mídia com `stop()`.
+- [x] **TASK-1304**: Validação completa com testes unitários aprovados (`testDebugUnitTest`), compilação do APK (`assembleDebug`) e instalação via ADB no Samsung Galaxy S23 Ultra (`SM-S918B`).
+
 
 
 

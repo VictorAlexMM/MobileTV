@@ -50,17 +50,23 @@ class PlayerEngine(
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
+    private val offlineMediaSourceFactory by lazy {
+        DefaultMediaSourceFactory(context.applicationContext)
+            .setDataSourceFactory(DownloadModule.buildOfflinePlaybackDataSourceFactory(context))
+    }
+
+    private val onlineMediaSourceFactory by lazy {
+        DefaultMediaSourceFactory(context.applicationContext)
+            .setDataSourceFactory(DownloadModule.buildPlaybackDataSourceFactory(context, networkGate))
+    }
+
     fun getPlayer(): ExoPlayer {
         return exoPlayer ?: createPlayer().also { exoPlayer = it }
     }
 
     private fun createPlayer(): ExoPlayer {
-        val dataSourceFactory = DownloadModule.buildPlaybackDataSourceFactory(context, networkGate)
-        val mediaSourceFactory = DefaultMediaSourceFactory(context.applicationContext)
-            .setDataSourceFactory(dataSourceFactory)
-
         val player = ExoPlayer.Builder(context.applicationContext)
-            .setMediaSourceFactory(mediaSourceFactory)
+            .setMediaSourceFactory(onlineMediaSourceFactory)
             .build()
 
         player.trackSelectionParameters = player.trackSelectionParameters
@@ -155,16 +161,23 @@ class PlayerEngine(
             mediaItemBuilder.build()
         }
 
+        val isOffline = isDownloaded || (completedDownload != null) || !networkGate.canAccessNetwork()
+
         _uiState.value = _uiState.value.copy(
             contentId = contentId,
             streamUrl = streamUrl,
             contentTitle = title,
-            isOfflinePlayback = isDownloaded || (completedDownload != null) || !networkGate.canAccessNetwork(),
+            isOfflinePlayback = isOffline,
             errorMessage = null
         )
 
         player.volume = if (_uiState.value.isMuted) 0f else 1f
-        player.setMediaItem(mediaItem)
+
+        // Se for reprodução offline, utiliza a fábrica estrita sem upstream de rede
+        val targetSourceFactory = if (isOffline) offlineMediaSourceFactory else onlineMediaSourceFactory
+        val mediaSource = targetSourceFactory.createMediaSource(mediaItem)
+
+        player.setMediaSource(mediaSource)
         if (startPositionMs > 0) {
             player.seekTo(startPositionMs)
         }
@@ -193,6 +206,29 @@ class PlayerEngine(
 
     fun play() {
         exoPlayer?.play()
+    }
+
+    /**
+     * Interrompe imediatamente a reprodução e descarrega os itens de mídia,
+     * garantindo o encerramento completo do reprodutor ao sair da tela.
+     */
+    fun stop() {
+        currentContentId = null
+        stopProgressLoop()
+        exoPlayer?.let { player ->
+            player.stop()
+            player.clearMediaItems()
+        }
+        _uiState.value = _uiState.value.copy(
+            isPlaying = false,
+            isBuffering = false,
+            contentId = "",
+            streamUrl = "",
+            contentTitle = "",
+            currentPositionMs = 0L,
+            durationMs = 0L,
+            errorMessage = null
+        )
     }
 
     private fun startProgressLoop() {

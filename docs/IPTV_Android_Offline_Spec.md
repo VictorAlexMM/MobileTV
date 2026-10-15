@@ -1,4 +1,4 @@
-# IPTV Player Android com Download e Reprodução Offline
+# MobileTV Android com Download e Reprodução Offline
 
 > Documento de especificação e plano de implementação para um app Android inspirado no [iptvnator](https://github.com/4gray/iptvnator), com o diferencial de **baixar conteúdo e assistir offline**.
 

@@ -1,4 +1,4 @@
-# Registro de Decisões de Arquitetura (ADRs) - IPTV Player Android Offline
+# Registro de Decisões de Arquitetura (ADRs) - MobileTV Android Offline
 
 > Documento vivo registrando decisões técnicas, padrões arquiteturais, regras de projeto e trade-offs adotados no desenvolvimento do aplicativo.
 
@@ -282,6 +282,24 @@
   - **Reprodução Imediata ao Toque**:
     - No `SeriesDetailScreen.kt`, ao clicar no botão de download já concluído (checkmark da Netflix), o episódio inicia a reprodução imediatamente com feedback visual.
 - **Consequências**: Arquivos baixados agora abrem instantaneamente tanto offline quanto online, sem erro de reprodução ou tela preta, e falsos downloads sem dados são devidamente acusados e tratados com retry.
+
+---
+
+### ADR-020: Desacoplamento Total de Upstream para Downloads Offline e Fechamento Integral do Player
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Downloads concluídos falhavam quando executados estritamente sem internet (modo offline), pois o Media3 `CacheDataSource` tentava consultar o upstream de rede para checar o cabeçalho `Content-Length` na ausência de metadados gravados. Além disso, ao sair da tela de reprodução cheia pelo botão voltar, o mini player (`CompactPlayerView`) permanecia aberto tocando em background no topo da tela em vez de encerrar a reprodução.
+- **Decisão**:
+  - **Fábrica de DataSource Offline Pura**:
+    - Criada `DownloadModule.buildOfflinePlaybackDataSourceFactory` com `setUpstreamDataSourceFactory(null)` e `setFlags(0)`.
+    - Ao reproduzir mídias baixadas (`isDownloaded == true` ou no modo offline), o Media3 utiliza a fábrica offline pura, garantindo que o `CacheDataSource` leia exclusivamente dos fragmentos locais do disco (`SimpleCache`) sem efetuar nenhuma requisição ou checagem de rede.
+    - O upstream de rede com User-Agent e timeouts permanece ativo exclusivamente para transmissões online em streaming.
+  - **Encerramento Completo do Reprodutor ao Sair**:
+    - Implementado `playerEngine.stop()` que para o playback imediatamente, descarrega a fila de mídias (`clearMediaItems()`) e zera os estados de buffer e tempo.
+    - Em `MainApp.kt`, o `onBackClick` do `PlayerScreen` chama `playerEngine.stop()`, desativa a tela cheia (`isPlayingFullscreen = false`) e oculta o mini player (`isCompactPlayerVisible = false`).
+    - O `DisposableEffect` do `PlayerScreen` e o `onClosePlayer` do `CompactPlayerView` agora acionam `playerEngine.stop()`, garantindo que sair da reprodução feche e cale o reprodutor instantaneamente.
+- **Consequências**: Mídias baixadas agora reproduzem com garantia total mesmo no modo avião ou sem nenhuma conexão à internet, e sair da tela de vídeo encerra a reprodução sem deixar áudio ou mini player residual aberto.
+
 
 
 

@@ -85,11 +85,23 @@ object DownloadModule {
     }
 
     /**
-     * Constrói o CacheDataSource.Factory para reprodução de mídia.
-     * Prioriza SEMPRE o cache local se os dados já existirem baixados.
-     * Se houver falha de cache ou streaming misto e a rede estiver permitida,
-     * utiliza o upstream com User-Agent correto e suporte a redirecionamentos.
-     * Quando offline, não trafega dados na rede.
+     * Constrói o CacheDataSource.Factory para reprodução de mídias baixadas 100% offline.
+     * Define upstreamDataSourceFactory como NULL, assegurando que o Media3 leia estritamente
+     * do cache local do disco sem tentar requisições remotas ou checagens de rede.
+     */
+    fun buildOfflinePlaybackDataSourceFactory(context: Context): DataSource.Factory {
+        val appCtx = context.applicationContext
+        val cache = getDownloadCache(appCtx)
+        return CacheDataSource.Factory()
+            .setCache(cache)
+            .setUpstreamDataSourceFactory(null) // Garantia absoluta de zero tráfego de rede
+            .setCacheWriteDataSinkFactory(null)
+            .setFlags(0)
+    }
+
+    /**
+     * Constrói o CacheDataSource.Factory para reprodução de mídia online e streaming misto.
+     * Prioriza o cache local se existir, e consulta o upstream com User-Agent de player quando necessário.
      */
     fun buildPlaybackDataSourceFactory(
         context: Context,

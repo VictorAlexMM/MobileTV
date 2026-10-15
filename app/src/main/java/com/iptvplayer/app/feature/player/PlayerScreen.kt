@@ -117,7 +117,7 @@ fun PlayerScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            playerEngine.pause()
+            playerEngine.stop()
         }
     }
 

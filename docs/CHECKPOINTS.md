@@ -1,4 +1,4 @@
-# Pontos de Verificação (Checkpoints) - IPTV Player Android Offline
+# Pontos de Verificação (Checkpoints) - MobileTV Android Offline
 
 > Registro de marcos e verificações formais de cada etapa de implementação, garantindo qualidade, aderência às regras do projeto e critérios de aceitação.
 
@@ -255,6 +255,21 @@
   - [x] Testes unitários 100% aprovados (`testDebugUnitTest`).
   - [x] APK gerado com sucesso (`assembleDebug`) e instalado no Samsung Galaxy S23 Ultra (`SM-S918B`).
 - **Resultado**: APROVADO.
+
+---
+
+### CP-17: Reprodução Offline Nativa (Zero Dependência de Rede) e Fechamento Total do Player
+- **Objetivo**: Garantir que mídias baixadas funcionem perfeitamente em modo 100% offline (modo avião / sem internet) sem falhar por tentativas de consulta ao upstream, e ajustar o ciclo de vida do player para fechar e interromper imediatamente a reprodução ao sair da tela de vídeo.
+- **Critérios de Validação**:
+  - [x] Criado `buildOfflinePlaybackDataSourceFactory` com `upstreamDataSourceFactory = null` e `flags = 0`, isolando a leitura de mídias baixadas do tráfego de rede.
+  - [x] `PlayerEngine` alterna dinamicamente entre `offlineMediaSourceFactory` (para downloads e offline) e `onlineMediaSourceFactory` (para streaming online).
+  - [x] Implementado método `playerEngine.stop()` que cancela jobs de progresso, para o playback e limpa os itens do ExoPlayer.
+  - [x] `onBackClick` da tela cheia em `MainApp.kt` fecha o player (`isPlayingFullscreen = false`, `isCompactPlayerVisible = false`) e chama `playerEngine.stop()`.
+  - [x] `onDispose` de `PlayerScreen.kt` e `onClosePlayer` de `CompactPlayerView.kt` acionam `playerEngine.stop()`, eliminando players residuais em background.
+  - [x] Testes unitários 100% aprovados (`testDebugUnitTest`).
+  - [x] APK gerado com sucesso (`assembleDebug`) e instalado no Samsung Galaxy S23 Ultra (`SM-S918B`).
+- **Resultado**: APROVADO.
+
 
 
 

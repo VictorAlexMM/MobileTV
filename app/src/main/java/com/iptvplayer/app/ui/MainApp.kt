@@ -149,8 +149,8 @@ fun MainApp(
                     isHls = url.contains(".m3u8", ignoreCase = true),
                     isDownloaded = false
                 )
-                isCompactPlayerVisible = true
-                isPlayingFullscreen = false
+                isPlayingFullscreen = true
+                isCompactPlayerVisible = false
             }
         } else {
             playerEngine.playContent(
@@ -160,15 +160,19 @@ fun MainApp(
                 isHls = url.contains(".m3u8", ignoreCase = true),
                 isDownloaded = isDownloaded
             )
-            isCompactPlayerVisible = true
-            isPlayingFullscreen = false
+            isPlayingFullscreen = true
+            isCompactPlayerVisible = false
         }
     }
 
     if (isPlayingFullscreen || isInPipMode) {
         PlayerScreen(
             playerEngine = playerEngine,
-            onBackClick = { isPlayingFullscreen = false },
+            onBackClick = {
+                playerEngine.stop()
+                isPlayingFullscreen = false
+                isCompactPlayerVisible = false
+            },
             isInPipMode = isInPipMode,
             onEnterPip = onEnterPip,
             onStartRecording = { channelId, title, streamUrl, duration ->
@@ -196,7 +200,7 @@ fun MainApp(
                     TopAppBar(
                         title = {
                             Text(
-                                text = "IPTV Player Offline",
+                                text = "MobileTV Offline",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                         },
@@ -277,7 +281,7 @@ fun MainApp(
                         playerEngine = playerEngine,
                         onExpandFullscreen = { isPlayingFullscreen = true },
                         onClosePlayer = {
-                            playerEngine.pause()
+                            playerEngine.stop()
                             isCompactPlayerVisible = false
                         },
                         onEnterPip = onEnterPip
