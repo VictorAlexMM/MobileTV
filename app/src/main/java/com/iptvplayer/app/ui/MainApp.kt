@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
@@ -51,6 +52,7 @@ import com.iptvplayer.app.feature.downloads.DownloadController
 import com.iptvplayer.app.feature.downloads.DownloadsScreen
 import com.iptvplayer.app.feature.live.ChannelRepository
 import com.iptvplayer.app.feature.live.LiveScreen
+import com.iptvplayer.app.feature.player.CompactPlayerView
 import com.iptvplayer.app.feature.player.ExternalPlayerHelper
 import com.iptvplayer.app.feature.player.PlayerEngine
 import com.iptvplayer.app.feature.player.PlayerScreen
@@ -90,6 +92,7 @@ fun MainApp(
     val context = LocalContext.current
     var currentDestination by remember { mutableStateOf(AppDestination.LIVE) }
     var isPlayingFullscreen by remember { mutableStateOf(false) }
+    var isCompactPlayerVisible by remember { mutableStateOf(false) }
 
     val activePlaylistId by settingsRepository.activePlaylistId.collectAsState(initial = null)
     val allPlaylists by playlistRepository.getAllPlaylists().collectAsState(initial = emptyList())
@@ -119,7 +122,8 @@ fun MainApp(
                     isHls = url.contains(".m3u8", ignoreCase = true),
                     isDownloaded = false
                 )
-                isPlayingFullscreen = true
+                isCompactPlayerVisible = true
+                isPlayingFullscreen = false
             }
         } else {
             playerEngine.playContent(
@@ -129,7 +133,8 @@ fun MainApp(
                 isHls = url.contains(".m3u8", ignoreCase = true),
                 isDownloaded = isDownloaded
             )
-            isPlayingFullscreen = true
+            isCompactPlayerVisible = true
+            isPlayingFullscreen = false
         }
     }
 
@@ -235,12 +240,29 @@ fun MainApp(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             containerColor = DarkBackground
         ) { innerPadding ->
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                Crossfade(targetState = currentDestination, label = "ScreenTransition") { destination ->
+                if (isCompactPlayerVisible) {
+                    CompactPlayerView(
+                        playerEngine = playerEngine,
+                        onExpandFullscreen = { isPlayingFullscreen = true },
+                        onClosePlayer = {
+                            playerEngine.pause()
+                            isCompactPlayerVisible = false
+                        },
+                        onEnterPip = onEnterPip
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    Crossfade(targetState = currentDestination, label = "ScreenTransition") { destination ->
                     when (destination) {
                         AppDestination.LIVE -> {
                             LiveScreen(
@@ -275,6 +297,7 @@ fun MainApp(
                         AppDestination.SERIES -> {
                             SeriesScreen(
                                 repository = channelRepository,
+                                database = database,
                                 downloadController = downloadController,
                                 activePlaylistId = activePlaylistId,
                                 isOfflineMode = isAppOffline,
@@ -302,7 +325,8 @@ fun MainApp(
                                         isHls = false,
                                         isDownloaded = true
                                     )
-                                    isPlayingFullscreen = true
+                                    isCompactPlayerVisible = true
+                                    isPlayingFullscreen = false
                                 }
                             )
                         }
@@ -330,3 +354,5 @@ fun MainApp(
         }
     }
 }
+}
+

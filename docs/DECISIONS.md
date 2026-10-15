@@ -152,3 +152,42 @@
   - Disponibilizar botão de ação "Baixar Temporada" na tela de Séries (`SeriesScreen`) quando uma categoria de temporada estiver selecionada.
 - **Consequências**: Experiência ágil de consumo offline para maratonar séries completas com um único toque.
 
+---
+
+### ADR-012: Experiência de Player Híbrido (Compacto por Padrão com Expansão para Tela Cheia) e Mute
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Iniciar reproduções diretamente em tela cheia obrigatória bloqueia a navegação do usuário e causa desorientação visual. Além disso, muitos usuários necessitam iniciar ou alternar para áudio mudo rapidamente.
+- **Decisão**:
+  - Criar o componente `CompactPlayerView` que aloca a superfície ExoPlayer no topo da tela em proporção 16:9 (~210dp de altura) preservando os detalhes do conteúdo e a navegação abaixo dele.
+  - Implementar o controle `isMuted` e métodos `toggleMute()` / `setMuted()` no `PlayerEngine`, aplicando `volume = 0f` ou `1f` ao ExoPlayer com ícone dinâmico nos controles.
+  - Disponibilizar botão explícito de "Tela Cheia" (`Fullscreen`) no player compacto que expande a visualização para `PlayerScreen` em tela cheia imersiva, com botão de "Sair da Tela Cheia" (`FullscreenExit`) e botão de voltar que retornam ao player compacto sem interromper o fluxo do vídeo.
+- **Consequências**: Usabilidade comparável ao YouTube e Netflix móvel, dando total controle ao usuário sobre a experiência de visualização.
+
+---
+
+### ADR-013: Metadados Ricos e Estruturação de Temporadas/Episódios para Séries e Filmes
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Playlists IPTV contêm filmes e episódios com nomenclaturas variadas (ex: "S01 E01", "Temporada 2 Ep 05") e falta de campos padronizados para sinopse, ano e gênero.
+- **Decisão**:
+  - Implementar `MovieMetadataHelper` que isola o ano de lançamento (`\b(19\d{2}|20\d{2})\b`), detecta estilos cinematográficos (Terror, Ação, Comédia, Ficção, etc.) a partir do título e grupo, e gera sinopse descritiva apresentada via `MovieDetailsSheet`.
+  - Implementar `SeriesMetadataHelper` que analisa padrões regex para títulos de séries, numeração de temporada e número de episódio, agrupando automaticamente itens em temporadas (`SeriesSeasonGroup`).
+  - Apresentar a tela dedicada `SeriesDetailScreen` ao tocar em uma série, carregando tabs de temporadas, lista de episódios, sinopse geral e ações de download da temporada inteira.
+- **Consequências**: Catálogo organizado e visualmente convidativo mesmo a partir de fontes M3U brutas.
+
+---
+
+### ADR-014: Indicador de Progresso Idêntico ao YouTube e Toggle de "Marcado como Visto"
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: O usuário precisa saber visualmente de relance quais episódios ou filmes já começou a assistir ou já concluiu, além de poder marcar manualmente episódios como assistidos.
+- **Decisão**:
+  - Desenvolver o componente `YouTubeProgressBar` posicionado na base inferior das thumbnails com fundo escuro e preenchimento proporcional em vermelho vibrante (`#FF0000`).
+  - Adicionar o método `getAllProgress()` no `WatchProgressDao` permitindo observar o estado de progresso de todo o catálogo de forma reativa.
+  - Fornecer botão de ação rápida "Marcado como visto" (`CheckCircle`) em cada episódio:
+    - Ao marcar: grava `positionMs = durationMs` no Room, preenchendo 100% da barra vermelha do YouTube e exibindo o badge "Visto".
+    - Ao desmarcar: remove o registro do Room, limpando a barra e o status.
+- **Consequências**: Familiaridade imediata com o padrão visual consagrado pelo YouTube e controle preciso sobre o histórico de exibição.
+
+

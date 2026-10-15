@@ -48,6 +48,7 @@ fun ChannelCard(
     channel: ChannelEntity,
     isOfflineMode: Boolean,
     downloadStatus: DownloadStatus?,
+    watchProgress: Float = 0f,
     onCardClick: () -> Unit,
     onFavoriteToggle: () -> Unit,
     onDownloadClick: () -> Unit,
@@ -117,6 +118,13 @@ fun ChannelCard(
                             modifier = Modifier.size(20.dp)
                         )
                     }
+                }
+
+                if (watchProgress > 0f) {
+                    YouTubeProgressBar(
+                        progressFraction = watchProgress,
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
                 }
             }
 

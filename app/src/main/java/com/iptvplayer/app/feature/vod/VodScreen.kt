@@ -73,6 +73,7 @@ fun VodScreen(
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var showGoOnlineDialog by remember { mutableStateOf(false) }
     var pendingMovieToPlay by remember { mutableStateOf<Pair<ChannelEntity, Boolean>?>(null) }
+    var selectedMovieForDetails by remember { mutableStateOf<ChannelEntity?>(null) }
     val scope = rememberCoroutineScope()
 
     val categories by if (activePlaylistId != null) {
@@ -91,6 +92,9 @@ fun VodScreen(
             else -> repository.searchChannelsPaged("")
         }
     }.collectAsLazyPagingItems()
+
+    val allProgress by repository.getAllWatchProgress().collectAsState(initial = emptyList())
+    val progressMap = remember(allProgress) { allProgress.associateBy { it.contentId } }
 
     var showCategorySheet by remember { mutableStateOf(false) }
 
@@ -210,17 +214,18 @@ fun VodScreen(
                             val downloadEntity by repository.observeDownload(movie.id).collectAsState(initial = null)
                             val isDownloaded = downloadEntity?.status == DownloadStatus.COMPLETED
 
+                            val watchProgress = progressMap[movie.id]
+                            val progressFraction = if (watchProgress != null && watchProgress.durationMs > 0) {
+                                (watchProgress.positionMs.toFloat() / watchProgress.durationMs.toFloat()).coerceIn(0f, 1f)
+                            } else 0f
+
                             ChannelCard(
                                 channel = movie,
                                 isOfflineMode = isOfflineMode,
                                 downloadStatus = downloadEntity?.status,
+                                watchProgress = progressFraction,
                                 onCardClick = {
-                                    if (isOfflineMode && !isDownloaded) {
-                                        pendingMovieToPlay = Pair(movie, false)
-                                        showGoOnlineDialog = true
-                                    } else {
-                                        onPlayMovie(movie, isDownloaded)
-                                    }
+                                    selectedMovieForDetails = movie
                                 },
                                 onFavoriteToggle = {
                                     scope.launch {
@@ -344,6 +349,50 @@ fun VodScreen(
                 }
             }
         }
+    }
+
+    // Modal Sheet de Detalhes do Filme com Biografia, Data de Lançamento e Estilo
+    selectedMovieForDetails?.let { movie ->
+        val downloadEntity by repository.observeDownload(movie.id).collectAsState(initial = null)
+        val isDownloaded = downloadEntity?.status == DownloadStatus.COMPLETED
+        val watchProgress by repository.observeWatchProgress(movie.id).collectAsState(initial = null)
+
+        MovieDetailsSheet(
+            movie = movie,
+            watchProgress = watchProgress,
+            isDownloaded = isDownloaded,
+            onDismiss = { selectedMovieForDetails = null },
+            onPlayClick = {
+                selectedMovieForDetails = null
+                if (isOfflineMode && !isDownloaded) {
+                    pendingMovieToPlay = Pair(movie, false)
+                    showGoOnlineDialog = true
+                } else {
+                    onPlayMovie(movie, isDownloaded)
+                }
+            },
+            onDownloadClick = {
+                scope.launch {
+                    try {
+                        downloadController.startDownload(
+                            contentId = movie.id,
+                            title = movie.name,
+                            sourceUrl = movie.streamUrl,
+                            posterUrl = movie.logoUrl
+                        )
+                        snackbarHostState.showSnackbar("Download iniciado: ${movie.name}")
+                    } catch (e: Exception) {
+                        snackbarHostState.showSnackbar("Erro: ${e.localizedMessage}")
+                    }
+                }
+            },
+            onFavoriteToggle = {
+                scope.launch {
+                    repository.toggleFavorite(movie.id, movie.isFavorite)
+                    selectedMovieForDetails = movie.copy(isFavorite = !movie.isFavorite)
+                }
+            }
+        )
     }
 
     GoOnlineDialog(

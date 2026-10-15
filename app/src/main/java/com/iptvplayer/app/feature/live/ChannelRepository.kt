@@ -65,4 +65,13 @@ class ChannelRepository(private val database: AppDatabase) {
     suspend fun getChannelsByGroup(playlistId: Long?, contentType: ContentType, groupTitle: String): List<ChannelEntity> {
         return channelDao.getChannelsByGroup(playlistId, contentType, groupTitle)
     }
+
+    fun observeWatchProgress(contentId: String): Flow<com.iptvplayer.app.core.database.entity.WatchProgressEntity?> {
+        return database.watchProgressDao().getProgress(contentId)
+    }
+
+    fun getAllWatchProgress(): Flow<List<com.iptvplayer.app.core.database.entity.WatchProgressEntity>> {
+        return database.watchProgressDao().getAllProgress()
+    }
 }
+

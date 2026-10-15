@@ -32,6 +32,7 @@ data class PlayerUiState(
     val contentTitle: String = "",
     val isLive: Boolean = false,
     val isOfflinePlayback: Boolean = false,
+    val isMuted: Boolean = false,
     val errorMessage: String? = null
 )
 
@@ -66,6 +67,8 @@ class PlayerEngine(
             .setPreferredAudioLanguage("por")
             .setPreferredTextLanguage("por")
             .build()
+
+        player.volume = if (_uiState.value.isMuted) 0f else 1f
 
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -124,12 +127,24 @@ class PlayerEngine(
             errorMessage = null
         )
 
+        player.volume = if (_uiState.value.isMuted) 0f else 1f
         player.setMediaItem(mediaItem)
         if (startPositionMs > 0) {
             player.seekTo(startPositionMs)
         }
         player.prepare()
         player.playWhenReady = true
+    }
+
+    fun toggleMute() {
+        val newMute = !_uiState.value.isMuted
+        exoPlayer?.volume = if (newMute) 0f else 1f
+        _uiState.value = _uiState.value.copy(isMuted = newMute)
+    }
+
+    fun setMuted(muted: Boolean) {
+        exoPlayer?.volume = if (muted) 0f else 1f
+        _uiState.value = _uiState.value.copy(isMuted = muted)
     }
 
     fun seekTo(positionMs: Long) {

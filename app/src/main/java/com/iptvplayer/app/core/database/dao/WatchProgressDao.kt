@@ -18,6 +18,9 @@ interface WatchProgressDao {
     @Query("SELECT * FROM watch_progress ORDER BY updatedAt DESC LIMIT :limit")
     fun getRecentlyWatched(limit: Int = 20): Flow<List<WatchProgressEntity>>
 
+    @Query("SELECT * FROM watch_progress")
+    fun getAllProgress(): Flow<List<WatchProgressEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveProgress(progress: WatchProgressEntity)
 

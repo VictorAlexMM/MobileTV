@@ -25,12 +25,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Forward10
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -198,6 +201,15 @@ fun PlayerScreen(
                         Spacer(modifier = Modifier.width(4.dp))
                     }
 
+                    // Botão Mudo / Desmudo
+                    IconButton(onClick = { playerEngine.toggleMute() }) {
+                        Icon(
+                            imageVector = if (uiState.isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                            contentDescription = if (uiState.isMuted) "Ativar Som" else "Mudo",
+                            tint = if (uiState.isMuted) Color(0xFFFF5252) else Color.White
+                        )
+                    }
+
                     // Botão Picture-in-Picture
                     IconButton(onClick = onEnterPip) {
                         Icon(
@@ -233,6 +245,15 @@ fun PlayerScreen(
                                 tint = Color.White
                             )
                         }
+                    }
+
+                    // Botão Sair da Tela Cheia (Retornar ao player compacto)
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.Default.FullscreenExit,
+                            contentDescription = "Sair da Tela Cheia",
+                            tint = Color.White
+                        )
                     }
                 }
 

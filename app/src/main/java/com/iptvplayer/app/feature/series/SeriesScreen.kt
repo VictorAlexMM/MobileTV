@@ -76,6 +76,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SeriesScreen(
     repository: ChannelRepository,
+    database: com.iptvplayer.app.core.database.AppDatabase,
     downloadController: DownloadController,
     activePlaylistId: Long?,
     isOfflineMode: Boolean,
@@ -89,6 +90,7 @@ fun SeriesScreen(
     var showCategorySheet by remember { mutableStateOf(false) }
     var showGoOnlineDialog by remember { mutableStateOf(false) }
     var pendingSeriesToPlay by remember { mutableStateOf<Pair<ChannelEntity, Boolean>?>(null) }
+    var selectedSeriesDetails by remember { mutableStateOf<SeriesDetails?>(null) }
     val scope = rememberCoroutineScope()
 
     val categories by if (activePlaylistId != null) {
@@ -108,11 +110,29 @@ fun SeriesScreen(
         }
     }.collectAsLazyPagingItems()
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(DarkBackground)
-    ) {
+    if (selectedSeriesDetails != null) {
+        SeriesDetailScreen(
+            seriesDetails = selectedSeriesDetails!!,
+            database = database,
+            downloadController = downloadController,
+            onBackClick = { selectedSeriesDetails = null },
+            onPlayEpisode = { episode, isDownloaded ->
+                if (isOfflineMode && !isDownloaded) {
+                    pendingSeriesToPlay = Pair(episode, false)
+                    showGoOnlineDialog = true
+                } else {
+                    onPlaySeries(episode, isDownloaded)
+                }
+            },
+            snackbarHostState = snackbarHostState,
+            modifier = modifier
+        )
+    } else {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(DarkBackground)
+        ) {
         // Barra de Busca Minimalista
         Row(
             modifier = Modifier
@@ -331,11 +351,20 @@ fun SeriesScreen(
                                 isOfflineMode = isOfflineMode,
                                 downloadStatus = downloadEntity?.status,
                                 onCardClick = {
-                                    if (isOfflineMode && !isDownloaded) {
-                                        pendingSeriesToPlay = Pair(item, false)
-                                        showGoOnlineDialog = true
-                                    } else {
-                                        onPlaySeries(item, isDownloaded)
+                                    scope.launch {
+                                        try {
+                                            val group = item.groupTitle
+                                            val rawTitle = SeriesMetadataHelper.cleanSeriesTitle(item.name)
+                                            val episodes = if (!group.isNullOrBlank()) {
+                                                val byGroup = repository.getChannelsByGroup(activePlaylistId, ContentType.SERIES, group)
+                                                if (byGroup.isNotEmpty()) byGroup else listOf(item)
+                                            } else {
+                                                listOf(item)
+                                            }
+                                            selectedSeriesDetails = SeriesMetadataHelper.groupEpisodes(episodes, fallbackSeriesTitle = rawTitle)
+                                        } catch (e: Exception) {
+                                            selectedSeriesDetails = SeriesMetadataHelper.groupEpisodes(listOf(item), fallbackSeriesTitle = item.name)
+                                        }
                                     }
                                 },
                                 onFavoriteToggle = {
@@ -405,6 +434,7 @@ fun SeriesScreen(
             }
         }
     }
+}
 
     // Modal Sheet de Todas as Categorias
     if (showCategorySheet) {

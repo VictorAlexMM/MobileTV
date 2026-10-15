@@ -140,3 +140,16 @@
   - Nova aba e tela dedicada de Séries (`SeriesScreen.kt`).
   - Modal sheets minimalistas para seleção de categorias com visualização de quantidade de canais/mídias.
 - [x] **TASK-606**: Refinamento da busca global e sincronização automática da playlist ativa no primeiro carregamento.
+
+---
+
+## Fase 7 — Detalhes Ricos de Mídia, Visualização YouTube, Mute e Player Compacto Não-Intrusivo
+
+- [x] **TASK-701**: Tela de detalhes de séries ([SeriesDetailScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesDetailScreen.kt)) com carregamento de temporadas, episódios, biografia/sinopse e agrupamento inteligente por [SeriesMetadataHelper.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesMetadataHelper.kt).
+- [x] **TASK-702**: Barra de progressão estilo YouTube ([YouTubeProgressBar.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/designsystem/components/YouTubeProgressBar.kt)) vermelha e proporcional no rodapé das thumbnails de episódios e pôsteres de filmes.
+- [x] **TASK-703**: Opção "Marcado como visto" com toggle individual por episódio, persistência imediata no Room (`WatchProgressEntity`) e feedback instantâneo via Snackbar.
+- [x] **TASK-704**: Carregamento de metadados ricos em filmes (VOD) com [MovieMetadataHelper.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/vod/MovieMetadataHelper.kt) e [MovieDetailsSheet.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/vod/MovieDetailsSheet.kt): biografia, data de lançamento, gênero/estilo (terror, ação, comédia, ficção, etc.).
+- [x] **TASK-705**: Player compacto não-intrusivo ([CompactPlayerView.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/CompactPlayerView.kt)) que inicia no topo da tela em proporção 16:9 sem cobrir o conteúdo e botão dedicado para expansão para tela cheia.
+- [x] **TASK-706**: Controle de áudio mudo/desmudo (`isMuted`, `toggleMute`) integrado no [PlayerEngine.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/PlayerEngine.kt), [CompactPlayerView.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/CompactPlayerView.kt) e [PlayerScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/player/PlayerScreen.kt).
+- [x] **TASK-707**: Compilação e deploy direto no smartphone conectado (`SM-S918B`) via `adb install -r -t` para testes físicos autônomos sem necessidade de Android Studio.
+

@@ -158,3 +158,18 @@
   - [x] Testes unitários atualizados e 100% passando (`BUILD SUCCESSFUL`).
 - **Resultado**: APROVADO.
 
+---
+
+### CP-11: Detalhes Ricos (Séries/Filmes), YouTube Progress Bar, Mute e Deploy no Celular Físico
+- **Objetivo**: Integrar tela rica de séries com temporadas e episódios, modal de filmes com biografia e estilo, barra de progresso do YouTube, toggle "Marcado como visto", player compacto não-intrusivo com mute e deploy no dispositivo físico.
+- **Critérios de Validação**:
+  - [x] Tela de séries com carregamento de biografia, sinopse, seletor de temporadas e episódios agrupados.
+  - [x] Detalhes de filmes com biografia, ano de lançamento, detecção de estilo/gênero (terror, ação, comédia, etc.).
+  - [x] Barra de progresso visual estilo YouTube (linha vermelha `#FF0000`) nas thumbnails e cards.
+  - [x] Opção "Marcado como visto" individual por episódio com gravação imediata no Room.
+  - [x] Player compacto embutido no topo (16:9) que não força tela cheia ao iniciar e botão de expansão.
+  - [x] Controle de reproduzir em mudo (`isMuted`, toggle) no player compacto e no fullscreen.
+  - [x] Build bem-sucedido e APK instalado com sucesso no Samsung Galaxy S23 Ultra (`SM-S918B`).
+- **Resultado**: APROVADO.
+
+
