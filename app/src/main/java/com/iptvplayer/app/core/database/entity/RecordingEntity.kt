@@ -17,6 +17,7 @@ data class RecordingEntity(
     val id: Long = 0,
     val channelId: String,
     val title: String,
+    val streamUrl: String = "",
     val scheduledStart: Long,
     val durationMinutes: Int,
     val status: RecordingStatus = RecordingStatus.SCHEDULED,

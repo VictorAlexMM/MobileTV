@@ -142,4 +142,19 @@
   - [x] Extração de categorias em M3U (`group-title`, `tvg-group`, `#EXTGRP:`) e Xtream API (`getLiveCategories`, `getVodCategories`, `getSeriesCategories`).
   - [x] DAO `ChannelDao` estruturado com queries que isolam `contentType`, associam contadores por categoria e evitam vazamento de canais entre abas.
   - [x] Diálogo de playlists aprimorado com validação, indicador inline e confirmação visual.
-- **Resultado**: EM ANDAMENTO (Compilação verificada, pronto para continuação e refinamento).
+- **Resultado**: APROVADO.
+
+---
+
+### CP-10: Recursos Avançados (PiP, Player Externo, Gravações Ao Vivo & Downloads de Temporadas)
+- **Objetivo**: Expandir o player nativo com suporte a Picture-in-Picture e reprodutor externo, permitir gravação de fluxos ao vivo e agendamento de programas via EPG com WorkManager, e possibilitar download de temporadas em lote.
+- **Critérios de Validação**:
+  - [x] Picture-in-Picture (`supportsPictureInPicture="true"`, `enterPictureInPictureMode`, `onUserLeaveHint`, controles limpos no overlay).
+  - [x] Despacho para reprodutor externo (VLC / MX Player) via `ExternalPlayerHelper` com toggle em Ajustes e botão na barra do player interno.
+  - [x] Gravação de live stream com duração configurável (`15`, `30`, `60`, `120` min) via `LiveStreamRecordingWorker` em segundo plano salvando pacotes `.ts`.
+  - [x] Agendamento de gravações futuras com base nos horários do EPG via `RecordingScheduler` e WorkManager.
+  - [x] Reprodução e exclusão de gravações locais salvas na aba Downloads -> Gravações.
+  - [x] Download em lote de temporadas inteiras de séries na fila de downloads com um clique.
+  - [x] Testes unitários atualizados e 100% passando (`BUILD SUCCESSFUL`).
+- **Resultado**: APROVADO.
+

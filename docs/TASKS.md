@@ -99,7 +99,7 @@
 - [x] **TASK-301**: Implementação do cliente HTTP Xtream Codes (`player_api.php`, categorias, streams live/vod/series, xmltv).
 - [x] **TASK-302**: Armazenamento seguro de credenciais Xtream usando Android Keystore / EncryptedSharedPreferences.
 - [x] **TASK-303**: Telas e detalhes de Filmes (VOD) com navegação e reprodução direta por cache.
-- [/] **TASK-304**: Opção "Baixar temporada inteira" na fila de downloads.
+- [x] **TASK-304**: Opção "Baixar temporada inteira" na fila de downloads.
 - [x] **TASK-305**: Parser XMLTV streaming com [XmltvParser.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/parser/epg/XmltvParser.kt) mapeado por `tvg-id`.
 - [x] **TASK-306**: Exibição "Agora / Próximo" nos canais e grade horária completa.
 - [x] **TASK-307**: Limpeza automática de dados de EPG expirados (>24h).
@@ -108,11 +108,11 @@
 
 ## Fase 4 — Gravações de Lives & Recursos Avançados
 
-- [/] **TASK-401**: Gravação imediata de canal ao vivo com duração definida.
-- [/] **TASK-402**: Agendamento de gravação via EPG com WorkManager.
+- [x] **TASK-401**: Gravação imediata de canal ao vivo com duração definida.
+- [x] **TASK-402**: Agendamento de gravação via EPG com WorkManager.
 - [x] **TASK-403**: Gravador de streams com persistência de `RecordingEntity` e listagem na aba Downloads.
-- [ ] **TASK-404**: Suporte a Picture-in-Picture (PiP).
-- [ ] **TASK-405**: Suporte a player externo (VLC / MX Player via Intent).
+- [x] **TASK-404**: Suporte a Picture-in-Picture (PiP).
+- [x] **TASK-405**: Suporte a player externo (VLC / MX Player via Intent).
 - [x] **TASK-406**: Gestão avançada de disco com alerta de limite configurável.
 
 ---
@@ -139,4 +139,4 @@
   - Consulta de categorias com contadores por tipo de mídia (`CategoryCount`).
   - Nova aba e tela dedicada de Séries (`SeriesScreen.kt`).
   - Modal sheets minimalistas para seleção de categorias com visualização de quantidade de canais/mídias.
-- [/] **TASK-606**: Refinamento da busca global e sincronização automática da playlist ativa no primeiro carregamento.
+- [x] **TASK-606**: Refinamento da busca global e sincronização automática da playlist ativa no primeiro carregamento.

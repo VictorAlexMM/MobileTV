@@ -56,6 +56,6 @@ class M3UParserTest {
         val ch3 = allChannels[2]
         assertEquals("Breaking Bad S01E01", ch3.name)
         assertEquals("Séries Drama", ch3.groupTitle)
-        assertEquals(ContentType.EPISODE, ch3.contentType)
+        assertEquals(ContentType.SERIES, ch3.contentType)
     }
 }

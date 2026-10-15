@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.FolderZip
@@ -51,20 +52,30 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.iptvplayer.app.core.database.AppDatabase
 import com.iptvplayer.app.core.database.entity.DownloadEntity
+import com.iptvplayer.app.core.database.entity.RecordingEntity
 import com.iptvplayer.app.core.database.model.DownloadStatus
+import com.iptvplayer.app.core.database.model.RecordingStatus
 import com.iptvplayer.app.core.designsystem.components.DownloadBadge
 import com.iptvplayer.app.core.designsystem.theme.DarkSurfaceVariant
 import com.iptvplayer.app.core.designsystem.theme.PrimaryIndigo
 import com.iptvplayer.app.core.designsystem.theme.StatusDownloadedGreen
+import com.iptvplayer.app.core.designsystem.theme.StatusWarningAmber
 import com.iptvplayer.app.core.designsystem.theme.TextMutedDark
+import com.iptvplayer.app.feature.recordings.RecordingScheduler
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 
 @Composable
 fun DownloadsScreen(
     database: AppDatabase,
     downloadController: DownloadController,
     onPlayOfflineItem: (DownloadEntity) -> Unit,
+    onPlayRecording: (filePath: String, title: String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var selectedTab by remember { mutableIntStateOf(0) }
     val allDownloads by database.downloadDao().getAllDownloads().collectAsState(initial = emptyList())
     val recordings by database.recordingDao().getAllRecordings().collectAsState(initial = emptyList())
@@ -103,7 +114,20 @@ fun DownloadsScreen(
                 onResume = { downloadController.resumeDownload(it.id) },
                 onCancel = { downloadController.removeDownload(it.id) }
             )
-            2 -> RecordingsList(recordings = recordings)
+            2 -> RecordingsList(
+                recordings = recordings,
+                onPlay = onPlayRecording,
+                onDelete = { rec ->
+                    scope.launch {
+                        RecordingScheduler.deleteRecording(context, database, rec.id, rec.filePath)
+                    }
+                },
+                onCancel = { rec ->
+                    scope.launch {
+                        RecordingScheduler.cancelRecording(context, database, rec.id)
+                    }
+                }
+            )
         }
     }
 }
@@ -295,7 +319,12 @@ private fun InProgressDownloadsList(
 }
 
 @Composable
-private fun RecordingsList(recordings: List<com.iptvplayer.app.core.database.entity.RecordingEntity>) {
+private fun RecordingsList(
+    recordings: List<RecordingEntity>,
+    onPlay: (filePath: String, title: String) -> Unit,
+    onDelete: (RecordingEntity) -> Unit,
+    onCancel: (RecordingEntity) -> Unit
+) {
     if (recordings.isEmpty()) {
         EmptyState(
             icon = Icons.Default.Videocam,
@@ -320,15 +349,74 @@ private fun RecordingsList(recordings: List<com.iptvplayer.app.core.database.ent
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = rec.title,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            Text(
-                                text = "Duração: ${rec.durationMinutes} min • Status: ${rec.status.name}",
-                                style = MaterialTheme.typography.bodySmall.copy(color = TextMutedDark)
-                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val (statusColor, statusLabel) = when (rec.status) {
+                                    RecordingStatus.RECORDING -> Pair(Color.Red, "Gravando...")
+                                    RecordingStatus.SCHEDULED -> Pair(StatusWarningAmber, "Agendado")
+                                    RecordingStatus.DONE -> Pair(StatusDownloadedGreen, "Gravado")
+                                    RecordingStatus.FAILED -> Pair(Color.Red, "Falhou")
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(statusColor.copy(alpha = 0.2f))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = statusLabel,
+                                        color = statusColor,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                Text(
+                                    text = "${rec.durationMinutes} min",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = TextMutedDark)
+                                )
+                            }
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (rec.status == RecordingStatus.DONE && !rec.filePath.isNullOrBlank()) {
+                                IconButton(onClick = { onPlay(rec.filePath, rec.title) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = "Reproduzir",
+                                        tint = PrimaryIndigo
+                                    )
+                                }
+                            }
+
+                            if (rec.status == RecordingStatus.RECORDING || rec.status == RecordingStatus.SCHEDULED) {
+                                IconButton(onClick = { onCancel(rec) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Cancel,
+                                        contentDescription = "Cancelar Gravação",
+                                        tint = StatusWarningAmber
+                                    )
+                                }
+                            } else {
+                                IconButton(onClick = { onDelete(rec) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Excluir Gravação",
+                                        tint = TextMutedDark
+                                    )
+                                }
+                            }
                         }
                     }
                 }

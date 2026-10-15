@@ -99,3 +99,56 @@
   - Telemetria de consumo de conteúdo é estritamente proibida.
   - Arquivos baixados são alocados no diretório seguro do aplicativo (`context.getExternalFilesDir("downloads")`), protegendo-os contra varreduras por apps terceiros sem permissão do usuário.
 - **Consequências**: Proteção dos dados do usuário e plena aderência às boas práticas de segurança do Android.
+
+---
+
+### ADR-008: Picture-in-Picture (PiP) e Integração de Ciclo de Vida
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Usuários assistindo canais ao vivo ou filmes precisam manter o vídeo visível em janela flutuante ao navegar em outros aplicativos ou alternar para a tela inicial.
+- **Decisão**:
+  - Habilitar `android:supportsPictureInPicture="true"` e `android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"` na `MainActivity`.
+  - Configurar `PictureInPictureParams.Builder` com aspecto 16:9 (`Rational(16, 9)`) em dispositivos Android 8.0+ (API 26+).
+  - Tratar `onUserLeaveHint()` na Activity para acionar PiP automaticamente quando o player estiver ativo e o usuário pressionar Home.
+  - No Jetpack Compose (`PlayerScreen`), ocultar automaticamente controles de overlay (top bar, seekbar, botões de ação) quando `isInPipMode == true` para exibir o stream limpo sem interferência visual.
+- **Consequências**: Experiência multitarefa fluida e nativa sem interrupção de áudio/vídeo.
+
+---
+
+### ADR-009: Integração com Player Externo (VLC / MX Player) via Android Intent System
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Alguns codecs legados ou streams exóticos podem se beneficiar da aceleração por hardware e bibliotecas especializadas presentes em players externos populares instalados pelo usuário.
+- **Decisão**:
+  - Criar o utilitário `ExternalPlayerHelper` responsável por despachar `Intent.ACTION_VIEW` com MIME type `video/*` e flag `FLAG_GRANT_READ_URI_PERMISSION`.
+  - Suportar tanto URLs remotas quanto arquivos locais (downloads/gravações) através do `FileProvider` do Android quando aplicável.
+  - Adicionar configuração "Usar Player Externo Padrão" nas configurações do app e botão dedicado de acesso rápido na barra do player interno.
+  - Implementar fallback resiliente: caso nenhum aplicativo externo compatível seja encontrado, o app notifica o usuário via Toast e abre o player interno automaticamente.
+- **Consequências**: Flexibilidade total para o usuário sem comprometer a estabilidade do player interno padrão.
+
+---
+
+### ADR-010: Gravação em Streaming de Canais Ao Vivo e Agendamento EPG com WorkManager
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Canais ao vivo não possuem VOD retroativo nativo no M3U; os usuários precisam gravar transmissões ao vivo imediatas ou agendar programas futuros com base na grade EPG.
+- **Decisão**:
+  - Implementar `LiveStreamRecordingWorker` estendendo `CoroutineWorker` do Jetpack WorkManager.
+  - O worker estabelece conexão HTTP com timeout longo com o stream do canal e escreve pacotes `.ts` diretamente no armazenamento seguro da aplicação (`getExternalFilesDir("recordings")`).
+  - O worker respeita cancelamentos de trabalho, atualiza periodicamente o tamanho em bytes no `RecordingDao` e finaliza com status `COMPLETED` ou `FAILED`.
+  - Para agendamentos futuros via EPG, o `RecordingScheduler` calcula o atraso inicial (`initialDelay = max(0, startEpoch - now)`) e enfileira uma `OneTimeWorkRequest` garantindo execução mesmo com o app em segundo plano.
+  - Gravações concluídas são listadas na aba "Gravações" da tela de Downloads e podem ser reproduzidas offline diretamente pelo Media3 ExoPlayer.
+- **Consequências**: Solução robusta e desacoplada do ciclo de vida da interface, garantindo integridade das gravações mesmo se o usuário fechar o aplicativo.
+
+---
+
+### ADR-011: Download em Lote de Temporadas Completas de Séries
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: Fazer download de episódios individuais de uma temporada inteira de série demanda muitos cliques e fricção.
+- **Decisão**:
+  - Adicionar query no Room `ChannelDao.getChannelsByGroup` para recuperar todos os episódios pertencentes a uma temporada/grupo (`groupTitle`).
+  - Adicionar método `startBatchDownload` no `DownloadController` que enfileira sequencialmente cada episódio no `AppDownloadService` via `DownloadRequest`.
+  - Disponibilizar botão de ação "Baixar Temporada" na tela de Séries (`SeriesScreen`) quando uma categoria de temporada estiver selecionada.
+- **Consequências**: Experiência ágil de consumo offline para maratonar séries completas com um único toque.
+

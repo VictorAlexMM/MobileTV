@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,21 +25,29 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Forward10
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -62,10 +72,16 @@ import kotlinx.coroutines.delay
 fun PlayerScreen(
     playerEngine: PlayerEngine,
     onBackClick: () -> Unit,
+    isInPipMode: Boolean = false,
+    onEnterPip: () -> Unit = {},
+    onStartRecording: ((channelId: String, title: String, streamUrl: String, durationMinutes: Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val uiState by playerEngine.uiState.collectAsState()
     var showControls by remember { mutableStateOf(true) }
+    var showRecordDialog by remember { mutableStateOf(false) }
+    var selectedDurationMinutes by remember { mutableIntStateOf(30) }
 
     // Esconde os controles automaticamente após 4 segundos
     LaunchedEffect(showControls, uiState.isPlaying) {
@@ -115,9 +131,9 @@ fun PlayerScreen(
             )
         }
 
-        // Controles Overlay Animados
+        // Controles Overlay Animados (ocultos em modo PiP)
         AnimatedVisibility(
-            visible = showControls,
+            visible = !isInPipMode && showControls,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.fillMaxSize()
@@ -127,7 +143,7 @@ fun PlayerScreen(
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.55f))
             ) {
-                // Barra Superior: Voltar, Título e Badge Offline
+                // Barra Superior: Voltar, Título, Badge Offline, PiP e Player Externo
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -178,6 +194,44 @@ fun PlayerScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                             }
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+
+                    // Botão Picture-in-Picture
+                    IconButton(onClick = onEnterPip) {
+                        Icon(
+                            imageVector = Icons.Default.PictureInPictureAlt,
+                            contentDescription = "Modo Picture-in-Picture",
+                            tint = Color.White
+                        )
+                    }
+
+                    // Botão Gravação de Canal ao Vivo
+                    if (uiState.isLive && onStartRecording != null && uiState.streamUrl.isNotBlank()) {
+                        IconButton(onClick = { showRecordDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Videocam,
+                                contentDescription = "Gravar Transmissão",
+                                tint = Color.Red
+                            )
+                        }
+                    }
+
+                    // Botão Player Externo (VLC / MX Player)
+                    if (uiState.streamUrl.isNotBlank()) {
+                        IconButton(onClick = {
+                            ExternalPlayerHelper.launchExternalPlayer(
+                                context = context,
+                                streamUrl = uiState.streamUrl,
+                                title = uiState.contentTitle
+                            )
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.OpenInNew,
+                                contentDescription = "Player Externo",
+                                tint = Color.White
+                            )
                         }
                     }
                 }
@@ -271,6 +325,55 @@ fun PlayerScreen(
                 }
             }
         }
+    }
+
+    if (showRecordDialog && onStartRecording != null) {
+        AlertDialog(
+            onDismissRequest = { showRecordDialog = false },
+            title = { Text("Gravar Canal ao Vivo", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Selecione a duração da gravação para ${uiState.contentTitle}:")
+                    Spacer(modifier = Modifier.height(12.dp))
+                    listOf(15, 30, 60, 120).forEach { minutes ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedDurationMinutes = minutes }
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedDurationMinutes == minutes,
+                                onClick = { selectedDurationMinutes = minutes }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("$minutes minutos")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onStartRecording(
+                            uiState.contentId,
+                            uiState.contentTitle,
+                            uiState.streamUrl,
+                            selectedDurationMinutes
+                        )
+                        showRecordDialog = false
+                    }
+                ) {
+                    Text("Iniciar Gravação")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRecordDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
 

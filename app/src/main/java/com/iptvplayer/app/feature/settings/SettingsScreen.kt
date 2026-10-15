@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -58,6 +59,7 @@ fun SettingsScreen(
     val offlineMode by settingsRepository.offlineModeEnabled.collectAsState(initial = false)
     val wifiOnly by settingsRepository.wifiOnlyDownloads.collectAsState(initial = true)
     val continueOffline by settingsRepository.continueDownloadsOffline.collectAsState(initial = false)
+    val externalPlayer by settingsRepository.externalPlayerEnabled.collectAsState(initial = false)
     val scope = rememberCoroutineScope()
 
     var showTermsDialog by remember { mutableStateOf(false) }
@@ -158,6 +160,65 @@ fun SettingsScreen(
                         Switch(
                             checked = wifiOnly,
                             onCheckedChange = { scope.launch { settingsRepository.setWifiOnlyDownloads(it) } },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = PrimaryIndigo
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        // Seção: Player e Reprodução
+        item {
+            Text(
+                text = "Player e Reprodução",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryIndigo
+                ),
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SmartDisplay,
+                                contentDescription = null,
+                                tint = PrimaryIndigo
+                            )
+                            Column {
+                                Text(
+                                    text = "Usar Player Externo Padrão",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 15.sp
+                                )
+                                Text(
+                                    text = "Abre canais e vídeos em reprodutores externos (VLC, MX Player, etc.)",
+                                    fontSize = 12.sp,
+                                    color = TextMutedDark
+                                )
+                            }
+                        }
+
+                        Switch(
+                            checked = externalPlayer,
+                            onCheckedChange = { scope.launch { settingsRepository.setExternalPlayer(it) } },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = PrimaryIndigo

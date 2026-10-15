@@ -22,8 +22,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -50,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.paging.LoadState
@@ -220,6 +224,60 @@ fun SeriesScreen(
                         ),
                         shape = RoundedCornerShape(20.dp)
                     )
+                }
+            }
+        }
+
+        // Ação de download da temporada inteira quando uma categoria de série estiver selecionada
+        if (selectedCategory != null && activePlaylistId != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(DarkSurfaceVariant)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = selectedCategory!!,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "Baixar todos os episódios desta temporada",
+                        fontSize = 11.sp,
+                        color = TextMutedDark
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                val episodes = repository.getChannelsByGroup(activePlaylistId, ContentType.SERIES, selectedCategory!!)
+                                if (episodes.isEmpty()) {
+                                    snackbarHostState.showSnackbar("Nenhum episódio encontrado nesta temporada.")
+                                } else {
+                                    val count = downloadController.startBatchDownload(episodes)
+                                    snackbarHostState.showSnackbar("Iniciando download de $count episódios da temporada!")
+                                }
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar("Erro ao baixar temporada: ${e.localizedMessage}")
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Baixar Temporada", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

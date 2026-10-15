@@ -27,6 +27,8 @@ data class PlayerUiState(
     val isBuffering: Boolean = false,
     val currentPositionMs: Long = 0L,
     val durationMs: Long = 0L,
+    val contentId: String = "",
+    val streamUrl: String = "",
     val contentTitle: String = "",
     val isLive: Boolean = false,
     val isOfflinePlayback: Boolean = false,
@@ -115,6 +117,8 @@ class PlayerEngine(
         val mediaItem = mediaItemBuilder.build()
 
         _uiState.value = _uiState.value.copy(
+            contentId = contentId,
+            streamUrl = streamUrl,
             contentTitle = title,
             isOfflinePlayback = isDownloaded || !networkGate.canAccessNetwork(),
             errorMessage = null

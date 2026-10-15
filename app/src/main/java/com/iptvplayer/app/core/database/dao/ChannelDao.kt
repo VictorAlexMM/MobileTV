@@ -91,6 +91,19 @@ interface ChannelDao {
         contentType: ContentType
     ): Flow<Int>
 
+    @Query("""
+        SELECT * FROM channels 
+        WHERE (:playlistId IS NULL OR playlistId = :playlistId) 
+          AND contentType = :contentType 
+          AND groupTitle = :groupTitle 
+        ORDER BY name ASC
+    """)
+    suspend fun getChannelsByGroup(
+        playlistId: Long?,
+        contentType: ContentType,
+        groupTitle: String
+    ): List<ChannelEntity>
+
     @Query("SELECT * FROM channels WHERE isFavorite = 1 ORDER BY name ASC")
     fun getFavoriteChannels(): Flow<List<ChannelEntity>>
 

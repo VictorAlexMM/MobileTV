@@ -13,6 +13,7 @@ import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
 import com.iptvplayer.app.core.common.AppException
 import com.iptvplayer.app.core.database.AppDatabase
+import com.iptvplayer.app.core.database.entity.ChannelEntity
 import com.iptvplayer.app.core.database.entity.DownloadEntity
 import com.iptvplayer.app.core.database.model.DownloadStatus
 import com.iptvplayer.app.core.datastore.SettingsRepository
@@ -103,6 +104,27 @@ class DownloadController(
             request,
             false
         )
+    }
+
+    /**
+     * Enfileira múltiplos episódios ou temporadas inteiras para download com proteção de armazenamento.
+     */
+    suspend fun startBatchDownload(items: List<ChannelEntity>): Int {
+        var queued = 0
+        for (item in items) {
+            try {
+                startDownload(
+                    contentId = item.id,
+                    title = item.name,
+                    sourceUrl = item.streamUrl,
+                    posterUrl = item.logoUrl
+                )
+                queued++
+            } catch (e: Exception) {
+                if (e is AppException.InsufficientStorageException) throw e
+            }
+        }
+        return queued
     }
 
     fun pauseDownload(contentId: String) {

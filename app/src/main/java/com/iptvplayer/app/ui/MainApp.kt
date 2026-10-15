@@ -51,14 +51,17 @@ import com.iptvplayer.app.feature.downloads.DownloadController
 import com.iptvplayer.app.feature.downloads.DownloadsScreen
 import com.iptvplayer.app.feature.live.ChannelRepository
 import com.iptvplayer.app.feature.live.LiveScreen
+import com.iptvplayer.app.feature.player.ExternalPlayerHelper
 import com.iptvplayer.app.feature.player.PlayerEngine
 import com.iptvplayer.app.feature.player.PlayerScreen
 import com.iptvplayer.app.feature.playlists.PlaylistRepository
 import com.iptvplayer.app.feature.playlists.PlaylistsScreen
+import com.iptvplayer.app.feature.recordings.RecordingScheduler
 import com.iptvplayer.app.feature.settings.SettingsScreen
 import com.iptvplayer.app.feature.vod.VodScreen
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.ui.platform.LocalContext
 import com.iptvplayer.app.feature.series.SeriesScreen
 import kotlinx.coroutines.launch
 
@@ -80,23 +83,79 @@ fun MainApp(
     playlistRepository: PlaylistRepository,
     channelRepository: ChannelRepository,
     downloadController: DownloadController,
-    playerEngine: PlayerEngine
+    playerEngine: PlayerEngine,
+    isInPipMode: Boolean = false,
+    onEnterPip: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     var currentDestination by remember { mutableStateOf(AppDestination.LIVE) }
     var isPlayingFullscreen by remember { mutableStateOf(false) }
 
     val activePlaylistId by settingsRepository.activePlaylistId.collectAsState(initial = null)
+    val allPlaylists by playlistRepository.getAllPlaylists().collectAsState(initial = emptyList())
     val offlineModeEnabled by settingsRepository.offlineModeEnabled.collectAsState(initial = false)
+    val externalPlayerEnabled by settingsRepository.externalPlayerEnabled.collectAsState(initial = false)
     val isOnlineAllowed by networkGate.isOnlineAllowed.collectAsState()
     val isAppOffline = !isOnlineAllowed
+
+    // Sincronização automática da playlist ativa no primeiro carregamento
+    androidx.compose.runtime.LaunchedEffect(allPlaylists, activePlaylistId) {
+        if (activePlaylistId == null && allPlaylists.isNotEmpty()) {
+            settingsRepository.setActivePlaylistId(allPlaylists.first().id)
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    if (isPlayingFullscreen) {
+    val handlePlay: (String, String, String, Boolean) -> Unit = { id, title, url, isDownloaded ->
+        if (externalPlayerEnabled && !isDownloaded) {
+            val opened = ExternalPlayerHelper.launchExternalPlayer(context, url, title)
+            if (!opened) {
+                playerEngine.playContent(
+                    contentId = id,
+                    title = title,
+                    streamUrl = url,
+                    isHls = url.contains(".m3u8", ignoreCase = true),
+                    isDownloaded = false
+                )
+                isPlayingFullscreen = true
+            }
+        } else {
+            playerEngine.playContent(
+                contentId = id,
+                title = title,
+                streamUrl = url,
+                isHls = url.contains(".m3u8", ignoreCase = true),
+                isDownloaded = isDownloaded
+            )
+            isPlayingFullscreen = true
+        }
+    }
+
+    if (isPlayingFullscreen || isInPipMode) {
         PlayerScreen(
             playerEngine = playerEngine,
-            onBackClick = { isPlayingFullscreen = false }
+            onBackClick = { isPlayingFullscreen = false },
+            isInPipMode = isInPipMode,
+            onEnterPip = onEnterPip,
+            onStartRecording = { channelId, title, streamUrl, duration ->
+                scope.launch {
+                    try {
+                        RecordingScheduler.startImmediateRecording(
+                            context = context,
+                            database = database,
+                            channelId = channelId,
+                            title = title,
+                            streamUrl = streamUrl,
+                            durationMinutes = duration
+                        )
+                        snackbarHostState.showSnackbar("Gravação iniciada: $title ($duration min)")
+                    } catch (e: Exception) {
+                        snackbarHostState.showSnackbar("Erro ao iniciar gravação: ${e.localizedMessage}")
+                    }
+                }
+            }
         )
     } else {
         Scaffold(
@@ -186,17 +245,12 @@ fun MainApp(
                         AppDestination.LIVE -> {
                             LiveScreen(
                                 repository = channelRepository,
+                                database = database,
+                                snackbarHostState = snackbarHostState,
                                 activePlaylistId = activePlaylistId,
                                 isOfflineMode = isAppOffline,
                                 onPlayChannel = { channel ->
-                                    playerEngine.playContent(
-                                        contentId = channel.id,
-                                        title = channel.name,
-                                        streamUrl = channel.streamUrl,
-                                        isHls = true,
-                                        isDownloaded = false
-                                    )
-                                    isPlayingFullscreen = true
+                                    handlePlay(channel.id, channel.name, channel.streamUrl, false)
                                 },
                                 onEnableOnlineMode = {
                                     scope.launch { settingsRepository.setOfflineMode(false) }
@@ -210,14 +264,7 @@ fun MainApp(
                                 activePlaylistId = activePlaylistId,
                                 isOfflineMode = isAppOffline,
                                 onPlayMovie = { movie, isDownloaded ->
-                                    playerEngine.playContent(
-                                        contentId = movie.id,
-                                        title = movie.name,
-                                        streamUrl = movie.streamUrl,
-                                        isHls = movie.streamUrl.contains(".m3u8", ignoreCase = true),
-                                        isDownloaded = isDownloaded
-                                    )
-                                    isPlayingFullscreen = true
+                                    handlePlay(movie.id, movie.name, movie.streamUrl, isDownloaded)
                                 },
                                 onEnableOnlineMode = {
                                     scope.launch { settingsRepository.setOfflineMode(false) }
@@ -232,14 +279,7 @@ fun MainApp(
                                 activePlaylistId = activePlaylistId,
                                 isOfflineMode = isAppOffline,
                                 onPlaySeries = { series, isDownloaded ->
-                                    playerEngine.playContent(
-                                        contentId = series.id,
-                                        title = series.name,
-                                        streamUrl = series.streamUrl,
-                                        isHls = series.streamUrl.contains(".m3u8", ignoreCase = true),
-                                        isDownloaded = isDownloaded
-                                    )
-                                    isPlayingFullscreen = true
+                                    handlePlay(series.id, series.name, series.streamUrl, isDownloaded)
                                 },
                                 onEnableOnlineMode = {
                                     scope.launch { settingsRepository.setOfflineMode(false) }
@@ -252,11 +292,14 @@ fun MainApp(
                                 database = database,
                                 downloadController = downloadController,
                                 onPlayOfflineItem = { download ->
+                                    handlePlay(download.id, download.title, download.sourceUrl, true)
+                                },
+                                onPlayRecording = { filePath, title ->
                                     playerEngine.playContent(
-                                        contentId = download.id,
-                                        title = download.title,
-                                        streamUrl = download.sourceUrl,
-                                        isHls = download.sourceUrl.contains(".m3u8", ignoreCase = true),
+                                        contentId = filePath,
+                                        title = title,
+                                        streamUrl = filePath,
+                                        isHls = false,
                                         isDownloaded = true
                                     )
                                     isPlayingFullscreen = true

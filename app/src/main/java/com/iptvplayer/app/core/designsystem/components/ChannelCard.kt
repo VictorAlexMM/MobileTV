@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -50,6 +51,7 @@ fun ChannelCard(
     onCardClick: () -> Unit,
     onFavoriteToggle: () -> Unit,
     onDownloadClick: () -> Unit,
+    onScheduleClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val isDownloaded = downloadStatus == DownloadStatus.COMPLETED
@@ -176,9 +178,18 @@ fun ChannelCard(
                 }
             }
 
-            // Ações: Download (para VOD/séries) e Favorito
+            // Ações: Agendamento EPG (Ao Vivo), Download (VOD/séries) e Favorito
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (channel.contentType != ContentType.LIVE && !isDownloaded) {
+                if (channel.contentType == ContentType.LIVE && onScheduleClick != null) {
+                    IconButton(onClick = onScheduleClick) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = "Agendar Gravação",
+                            tint = PrimaryIndigo,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                } else if (channel.contentType != ContentType.LIVE && !isDownloaded) {
                     IconButton(onClick = onDownloadClick) {
                         Icon(
                             imageVector = Icons.Default.Download,

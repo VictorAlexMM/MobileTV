@@ -61,4 +61,8 @@ class ChannelRepository(private val database: AppDatabase) {
     fun observeDownload(channelId: String): Flow<DownloadEntity?> {
         return downloadDao.observeDownloadByChannelId(channelId)
     }
+
+    suspend fun getChannelsByGroup(playlistId: Long?, contentType: ContentType, groupTitle: String): List<ChannelEntity> {
+        return channelDao.getChannelsByGroup(playlistId, contentType, groupTitle)
+    }
 }
