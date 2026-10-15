@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlaylistPlay
@@ -67,15 +68,16 @@ import com.iptvplayer.app.feature.vod.VodScreen
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.ui.platform.LocalContext
+import com.iptvplayer.app.feature.home.HomeScreen
 import com.iptvplayer.app.feature.series.SeriesDetails
 import com.iptvplayer.app.feature.series.SeriesScreen
 import kotlinx.coroutines.launch
 
 enum class AppDestination(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    HOME("Início", Icons.Default.Home),
     LIVE("Canais", Icons.Default.LiveTv),
     MOVIES("Filmes", Icons.Default.Movie),
     SERIES("Séries", Icons.Default.VideoLibrary),
-    PLAYLISTS("Playlists", Icons.AutoMirrored.Filled.PlaylistPlay),
     DOWNLOADS("Downloads", Icons.Default.Download),
     SETTINGS("Ajustes", Icons.Default.Settings)
 }
@@ -94,7 +96,7 @@ fun MainApp(
     onEnterPip: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    var currentDestination by remember { mutableStateOf(AppDestination.LIVE) }
+    var currentDestination by remember { mutableStateOf(AppDestination.HOME) }
     var isPlayingFullscreen by remember { mutableStateOf(false) }
     var isCompactPlayerVisible by remember { mutableStateOf(false) }
     var currentSeriesDetails by remember { mutableStateOf<SeriesDetails?>(null) }
@@ -125,13 +127,13 @@ fun MainApp(
         isCompactPlayerVisible = true
     }
 
-    // Se estiver em uma aba secundária (Filmes, Séries, Downloads, Playlists, Ajustes) e não estiver em detalhes de série, volta para Canais
-    BackHandler(enabled = !isPlayingFullscreen && currentDestination != AppDestination.LIVE && currentSeriesDetails == null) {
-        currentDestination = AppDestination.LIVE
+    // Se estiver em uma aba secundária e não estiver em detalhes de série, volta para Início
+    BackHandler(enabled = !isPlayingFullscreen && currentDestination != AppDestination.HOME && currentSeriesDetails == null) {
+        currentDestination = AppDestination.HOME
     }
 
-    // Se estiver na tela inicial (Canais), requer duplo clique para sair do aplicativo, evitando saída acidental
-    BackHandler(enabled = !isPlayingFullscreen && currentDestination == AppDestination.LIVE) {
+    // Se estiver na tela inicial (Início), requer duplo clique para sair do aplicativo, evitando saída acidental
+    BackHandler(enabled = !isPlayingFullscreen && currentDestination == AppDestination.HOME) {
         val now = System.currentTimeMillis()
         if (now - lastBackPressTime < 2000L) {
             activity?.finish()
@@ -141,7 +143,7 @@ fun MainApp(
         }
     }
 
-    val handlePlay: (String, String, String, Boolean) -> Unit = { id, title, url, isDownloaded ->
+    val handlePlay: (String, String, String, Boolean, Long) -> Unit = { id, title, url, isDownloaded, startPositionMs ->
         if (externalPlayerEnabled && !isDownloaded) {
             val opened = ExternalPlayerHelper.launchExternalPlayer(context, url, title)
             if (!opened) {
@@ -150,6 +152,7 @@ fun MainApp(
                     title = title,
                     streamUrl = url,
                     isHls = url.contains(".m3u8", ignoreCase = true),
+                    startPositionMs = startPositionMs,
                     isDownloaded = false
                 )
                 isPlayingFullscreen = true
@@ -161,6 +164,7 @@ fun MainApp(
                 title = title,
                 streamUrl = url,
                 isHls = url.contains(".m3u8", ignoreCase = true),
+                startPositionMs = startPositionMs,
                 isDownloaded = isDownloaded
             )
             isPlayingFullscreen = true
@@ -270,6 +274,20 @@ fun MainApp(
                 ) {
                     Crossfade(targetState = currentDestination, label = "ScreenTransition") { destination ->
                     when (destination) {
+                        AppDestination.HOME -> {
+                            HomeScreen(
+                                database = database,
+                                channelRepository = channelRepository,
+                                downloadController = downloadController,
+                                activePlaylistId = activePlaylistId,
+                                isOfflineMode = isAppOffline,
+                                onNavigateTo = { dest -> currentDestination = dest },
+                                onPlayItem = { id, title, url, isDownloaded, startPos ->
+                                    handlePlay(id, title, url, isDownloaded, startPos)
+                                },
+                                snackbarHostState = snackbarHostState
+                            )
+                        }
                         AppDestination.LIVE -> {
                             LiveScreen(
                                 repository = channelRepository,
@@ -278,7 +296,7 @@ fun MainApp(
                                 activePlaylistId = activePlaylistId,
                                 isOfflineMode = isAppOffline,
                                 onPlayChannel = { channel ->
-                                    handlePlay(channel.id, channel.name, channel.streamUrl, false)
+                                    handlePlay(channel.id, channel.name, channel.streamUrl, false, 0L)
                                 },
                                 onEnableOnlineMode = {
                                     scope.launch { settingsRepository.setOfflineMode(false) }
@@ -292,7 +310,7 @@ fun MainApp(
                                 activePlaylistId = activePlaylistId,
                                 isOfflineMode = isAppOffline,
                                 onPlayMovie = { movie, isDownloaded ->
-                                    handlePlay(movie.id, movie.name, movie.streamUrl, isDownloaded)
+                                    handlePlay(movie.id, movie.name, movie.streamUrl, isDownloaded, 0L)
                                 },
                                 onEnableOnlineMode = {
                                     scope.launch { settingsRepository.setOfflineMode(false) }
@@ -310,7 +328,7 @@ fun MainApp(
                                 selectedSeriesDetails = currentSeriesDetails,
                                 onSelectSeriesDetails = { currentSeriesDetails = it },
                                 onPlaySeries = { series, isDownloaded ->
-                                    handlePlay(series.id, series.name, series.streamUrl, isDownloaded)
+                                    handlePlay(series.id, series.name, series.streamUrl, isDownloaded, 0L)
                                 },
                                 onEnableOnlineMode = {
                                     scope.launch { settingsRepository.setOfflineMode(false) }
@@ -323,7 +341,7 @@ fun MainApp(
                                 database = database,
                                 downloadController = downloadController,
                                 onPlayOfflineItem = { download ->
-                                    handlePlay(download.id, download.title, download.sourceUrl, true)
+                                    handlePlay(download.id, download.title, download.sourceUrl, true, 0L)
                                 },
                                 onPlayRecording = { filePath, title ->
                                     playerEngine.playContent(
@@ -331,6 +349,7 @@ fun MainApp(
                                         title = title,
                                         streamUrl = filePath,
                                         isHls = false,
+                                        startPositionMs = 0L,
                                         isDownloaded = true
                                     )
                                     isCompactPlayerVisible = true
@@ -338,25 +357,21 @@ fun MainApp(
                                 }
                             )
                         }
-                        AppDestination.PLAYLISTS -> {
-                            PlaylistsScreen(
-                                repository = playlistRepository,
+                        AppDestination.SETTINGS -> {
+                            SettingsScreen(
+                                settingsRepository = settingsRepository,
+                                downloadController = downloadController,
+                                playlistRepository = playlistRepository,
                                 activePlaylistId = activePlaylistId,
                                 onSelectPlaylist = { id ->
                                     scope.launch {
                                         settingsRepository.setActivePlaylistId(id)
                                     }
                                 },
-                                snackbarHostState = snackbarHostState
-                            )
-                        }
-                        AppDestination.SETTINGS -> {
-                            SettingsScreen(
-                                settingsRepository = settingsRepository,
-                                downloadController = downloadController,
+                                snackbarHostState = snackbarHostState,
                                 database = database,
                                 onPlayOfflineItem = { download ->
-                                    handlePlay(download.id, download.title, download.sourceUrl, true)
+                                    handlePlay(download.id, download.title, download.sourceUrl, true, 0L)
                                 }
                             )
                         }

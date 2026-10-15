@@ -314,7 +314,27 @@
   - [x] Testes unitários 100% aprovados (`testDebugUnitTest`).
   - [x] Compilação do APK concluída com sucesso (`assembleDebug`).
   - [x] Instalação via ADB no dispositivo Samsung Galaxy S23 Ultra (`RQCW1067EEB` - `Success`).
+- [x] **TASK-1605**: Validação completa com testes unitários (`testDebugUnitTest` 100% aprovados), compilação do APK (`assembleDebug` bem-sucedido) e instalação via ADB no Samsung Galaxy S23 Ultra (`RQCW1067EEB` - `Success`).
 - **Resultado**: APROVADO.
+
+---
+
+### CP-21: Tela de Início ("Continuar Assistindo"), Retomada de Posição (`startPositionMs`) e Playlists em Configurações
+- **Objetivo**: Mover o gerenciamento de playlists para dentro de Configurações, adicionar a aba Início na barra inferior com o carrossel "Continuar Assistindo" e fornecer a opção de iniciar o player de onde o usuário parou ou reiniciar do início.
+- **Critérios de Validação**:
+  - [x] Criação de `HomeScreen.kt` com observação reativa de `WatchProgressDao.getRecentlyWatched`.
+  - [x] Carrossel 16:9 de Continuar Assistindo com barra vermelha do YouTube, progresso em % e tempo restante em minutos.
+  - [x] Botão "Continuar" disparando a reprodução com `startPositionMs = item.positionMs`.
+  - [x] Botão "Reiniciar" disparando a reprodução com `startPositionMs = 0L`.
+  - [x] Botão de exclusão rápida do histórico de reprodução.
+  - [x] Acesso rápido para Canais, Filmes, Séries e Downloads.
+  - [x] Centralização de playlists em `SettingsScreen.kt` com sub-tela dedicada e botão de retorno.
+  - [x] Atualização da barra inferior em `MainApp.kt`: Início, Canais, Filmes, Séries, Downloads.
+  - [x] Testes unitários com 100% de aprovação (`BUILD SUCCESSFUL`).
+  - [x] Compilação do APK concluída com sucesso (`assembleDebug`).
+  - [x] Instalação via ADB no dispositivo Samsung Galaxy S23 Ultra (`RQCW1067EEB` - `Success`).
+- **Resultado**: APROVADO.
+
 
 
 

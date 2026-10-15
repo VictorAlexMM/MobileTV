@@ -364,6 +364,35 @@
     - A ação de parada completa (`playerEngine.stop()`) é restrita ao botão explícito de fechar (`Icons.Default.Close`) presente tanto no mini player quanto no player em tela cheia.
 - **Consequências**: A transição entre tela cheia e tela da série é instantânea, sem recargas ou perdas de posição, a lista de episódios e temporadas permanece exatamente como o usuário a deixou, e a redução para o player compacto opera perfeitamente sem cortes de áudio/vídeo.
 
+---
+
+### ADR-024: Tela de Início ("Continuar Assistindo"), Retomada com `startPositionMs` e Playlists em Configurações
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: A barra inferior de navegação continha "Playlists", um recurso de configuração que raramente é acessado após a importação inicial de listas M3U ou contas Xtream. Ao mesmo tempo, o usuário precisava de uma página inicial com a funcionalidade de "Continuar Assistindo", permitindo retomar diretamente de onde parou em filmes, séries e canais gravados no histórico (`watch_progress`), além de ter a opção clara de reiniciar o vídeo do começo.
+- **Decisão**:
+  - **Tela de Início Dinâmica (`HomeScreen.kt`)**:
+    - Criada a nova tela inicial do aplicativo, posicionada como primeira aba padrão (`AppDestination.HOME`).
+    - Integração direta e reativa com `WatchProgressDao.getRecentlyWatched(30)`.
+    - Resolução automática em segundo plano para obter os metadados dos conteúdos (canais remotos ou mídias baixadas offline no `DownloadDao`).
+    - Carrossel horizontal de cards 16:9 ("Continuar Assistindo") com visual moderno:
+      - Pôster com badge de duração restante ("Restam X min") e porcentagem de progresso assistido.
+      - Barra de progresso vermelha proporcional no padrão YouTube (`YouTubeProgressBar`).
+      - Botão primário de ação "Continuar", invocando `onPlayItem` com o timestamp exato registrado (`item.positionMs`).
+      - Botão secundário de ação "Reiniciar", invocando a reprodução com `startPositionMs = 0L`.
+      - Menu/ação rápida para remover o item do histórico (`watchProgressDao.deleteProgress`).
+    - Atalhos de "Acesso Rápido" para Canais Ao Vivo, Filmes, Séries e Mídias Baixadas.
+    - Seções complementares para "Canais Favoritos" e "Pronto para Assistir Offline".
+  - **Repasse do Marcador de Posição (`startPositionMs`)**:
+    - `PlayerEngine` já possuía suporte a `startPositionMs: Long = 0L` com `player.seekTo(startPositionMs)`.
+    - A função `handlePlay` em `MainApp.kt` foi estendida para receber `startPositionMs` e repassá-la ao iniciar a mídia tanto em tela cheia quanto no player compacto.
+  - **Gerenciamento de Playlists Centralizado em Configurações (`SettingsScreen.kt`)**:
+    - Removida a aba de Playlists da barra inferior.
+    - Adicionado card interativo em destaque no topo da tela de Configurações, exibindo o nome da playlist ativa, quantidade de playlists cadastradas e botão "Gerenciar Playlists".
+    - Ao tocar no botão, a interface abre a sub-tela de gerenciamento completo de playlists ([PlaylistsScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/playlists/PlaylistsScreen.kt)) em camada com botão de retorno dedicado e suporte a `BackHandler`.
+- **Consequências**: A interface principal torna-se muito mais acolhedora e prática no dia a dia, permitindo retomar qualquer conteúdo instantaneamente de onde parou com um único clique ou reiniciar do início, ao mesmo tempo em que a configuração de playlists fica devidamente abrigada em Ajustes.
+
+
 
 
 

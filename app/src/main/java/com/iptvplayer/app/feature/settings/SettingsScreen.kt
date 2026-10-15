@@ -17,7 +17,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
@@ -25,6 +28,7 @@ import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
@@ -77,7 +81,11 @@ import com.iptvplayer.app.core.designsystem.theme.StatusDownloadedGreen
 import com.iptvplayer.app.core.designsystem.theme.StatusWarningAmber
 import com.iptvplayer.app.core.designsystem.theme.TextMutedDark
 import com.iptvplayer.app.feature.downloads.DownloadController
+import com.iptvplayer.app.core.designsystem.theme.DarkBackground
 import com.iptvplayer.app.feature.downloads.DownloadModule
+import com.iptvplayer.app.feature.playlists.PlaylistRepository
+import com.iptvplayer.app.feature.playlists.PlaylistsScreen
+import androidx.compose.material3.SnackbarHostState
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -85,12 +93,18 @@ import java.io.File
 fun SettingsScreen(
     settingsRepository: SettingsRepository,
     downloadController: DownloadController,
+    playlistRepository: PlaylistRepository? = null,
+    activePlaylistId: Long? = null,
+    onSelectPlaylist: ((Long) -> Unit)? = null,
+    snackbarHostState: SnackbarHostState? = null,
     database: AppDatabase? = null,
     onPlayOfflineItem: ((DownloadEntity) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    var showPlaylistsSubScreen by remember { mutableStateOf(false) }
 
     val offlineMode by settingsRepository.offlineModeEnabled.collectAsState(initial = false)
     val wifiOnly by settingsRepository.wifiOnlyDownloads.collectAsState(initial = true)
@@ -118,21 +132,142 @@ fun SettingsScreen(
         StorageUtils.getAvailableStorageBytes(context)
     }
 
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Seção: Rede e Modo Offline
-        item {
-            Text(
-                text = "Rede & Modo Offline",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryIndigo
-                ),
-                modifier = Modifier.padding(bottom = 4.dp)
+    if (showPlaylistsSubScreen && playlistRepository != null) {
+        BackHandler {
+            showPlaylistsSubScreen = false
+        }
+
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(DarkBackground)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { showPlaylistsSubScreen = false }) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Voltar",
+                        tint = Color.White
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Ajustes > Playlists & Provedores",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White
+                )
+            }
+
+            PlaylistsScreen(
+                repository = playlistRepository,
+                activePlaylistId = activePlaylistId,
+                onSelectPlaylist = onSelectPlaylist ?: {},
+                snackbarHostState = snackbarHostState ?: remember { SnackbarHostState() },
+                modifier = Modifier.weight(1f)
             )
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Seção: Playlists & Provedores IPTV (Centralizada nas Configurações)
+            if (playlistRepository != null) {
+                item {
+                    Text(
+                        text = "Playlists & Servidores IPTV",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryIndigo
+                        ),
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
+                    val playlists by playlistRepository.getAllPlaylists().collectAsState(initial = emptyList())
+                    val activePlaylist = playlists.firstOrNull { it.id == activePlaylistId }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { showPlaylistsSubScreen = true },
+                        colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(PrimaryIndigo.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
+                                        contentDescription = null,
+                                        tint = PrimaryIndigo,
+                                        modifier = Modifier.size(26.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (activePlaylist != null) activePlaylist.name else "Nenhuma playlist ativa",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = "${playlists.size} playlist(s) cadastrada(s) • Toque para gerenciar",
+                                        style = MaterialTheme.typography.bodySmall.copy(color = TextMutedDark),
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { showPlaylistsSubScreen = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Gerenciar Playlists", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Seção: Rede e Modo Offline
+            item {
+                Text(
+                    text = "Rede & Modo Offline",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryIndigo
+                    ),
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -844,5 +979,6 @@ fun SettingsScreen(
                 }
             }
         )
+    }
     }
 }

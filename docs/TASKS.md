@@ -316,6 +316,30 @@
   - Terceiro toque retorna para a aba de Canais.
 - [x] **TASK-1605**: Validação completa com testes unitários (`testDebugUnitTest` 100% aprovados), compilação do APK (`assembleDebug` bem-sucedido) e instalação via ADB no Samsung Galaxy S23 Ultra (`RQCW1067EEB` - `Success`).
 
+---
+
+## Fase 17 — Tela de Início (Continuar Assistindo), Retomada Inteligente de Posição & Playlists em Configurações
+
+- [x] **TASK-1701**: Criação da tela inicial dinâmica em [HomeScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/home/HomeScreen.kt):
+  - Observação reativa de `watchProgressDao.getRecentlyWatched(30)` e resolução paralela de canais/mídias (`ChannelEntity`) e downloads offline (`DownloadEntity`).
+  - Carrossel horizontal "Continuar Assistindo" com cards 16:9, miniatura, título, categoria/tipo, porcentagem de progresso e barra vermelha proporcional estilo YouTube (`YouTubeProgressBar`).
+  - Botão de ação primária "Continuar" disparando o player exatamente em `item.positionMs`.
+  - Botão de ação secundária "Reiniciar do Começo" (`startPositionMs = 0L`).
+  - Opção rápida para "Remover do Histórico" via `database.watchProgressDao().deleteProgress(contentId)`.
+  - Seções de apoio: "Acesso Rápido" (Canais, Filmes, Séries, Downloads), "Canais Favoritos" e "Pronto para Assistir Offline".
+- [x] **TASK-1702**: Migração e centralização do gerenciador de playlists em [SettingsScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/settings/SettingsScreen.kt):
+  - Adição de card de destaque "Playlists & Provedores IPTV" no topo das configurações, exibindo o status da playlist ativa, total de listas cadastradas e botão "Gerenciar Playlists".
+  - Implementação de sub-tela interna em overlay com cabeçalho de retorno e `BackHandler` integrado, encapsulando [PlaylistsScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/playlists/PlaylistsScreen.kt) sem perda de funcionalidades (M3U, Xtream, Stalker, upload de arquivo local).
+- [x] **TASK-1703**: Reestruturação da barra de navegação e suporte a `startPositionMs` em [MainApp.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/ui/MainApp.kt):
+  - Substituição da aba `PLAYLISTS` por `HOME` (`Icons.Default.Home`), posicionando a tela de Início como o primeiro destino padrão do app.
+  - Atualização de `handlePlay` para aceitar `startPositionMs: Long = 0L`, repassando para `playerEngine.playContent(..., startPositionMs = startPositionMs)`.
+  - Ajuste de `BackHandler`: Toque no botão voltar em qualquer aba secundária direciona para `HOME`; toque duplo em `HOME` confirma a saída da aplicação.
+- [x] **TASK-1704**: Validação e verificação:
+  - Testes unitários com `./gradlew testDebugUnitTest` 100% aprovados.
+  - Compilação do APK de release/debug via `./gradlew assembleDebug`.
+  - Instalação no Samsung Galaxy S23 Ultra (`RQCW1067EEB`) via ADB.
+
+
 
 
 
