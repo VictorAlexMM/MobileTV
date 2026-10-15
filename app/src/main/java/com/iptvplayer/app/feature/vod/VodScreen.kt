@@ -2,6 +2,7 @@ package com.iptvplayer.app.feature.vod
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Menu
@@ -96,10 +98,21 @@ fun VodScreen(
         selectedCategory = null
     }
 
+    var categorySearchQuery by remember { mutableStateOf("") }
+
     val categories by if (activePlaylistId != null) {
         repository.getCategories(activePlaylistId, ContentType.MOVIE).collectAsState(initial = emptyList())
     } else {
         remember { mutableStateOf(emptyList<String>()) }
+    }
+
+    val matchingCategories = remember(categories, searchQuery) {
+        val q = searchQuery.trim()
+        if (q.length >= 2) {
+            categories.filter { it.contains(q, ignoreCase = true) }.take(6)
+        } else {
+            emptyList()
+        }
     }
 
     val moviesPaging = remember(activePlaylistId, selectedCategory, searchQuery, showFavoritesOnly) {
@@ -121,7 +134,7 @@ fun VodScreen(
         showFavoritesOnly && selectedCategory != null -> "Buscar favoritos em \"$selectedCategory\"..."
         showFavoritesOnly -> "Buscar em filmes favoritos..."
         selectedCategory != null -> "Buscar em \"$selectedCategory\"..."
-        else -> "Buscar filmes (VOD)..."
+        else -> "Buscar filmes ou categorias..."
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -191,6 +204,101 @@ fun VodScreen(
             }
         }
 
+        // Indicador visual de categoria ativa ou sugestões de categorias encontradas na busca
+        if (selectedCategory != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(PrimaryIndigo.copy(alpha = 0.22f))
+                        .border(1.dp, PrimaryIndigo.copy(alpha = 0.45f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Category,
+                            contentDescription = null,
+                            tint = PrimaryIndigo,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Categoria: $selectedCategory",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Limpar filtro de categoria",
+                            tint = com.iptvplayer.app.core.designsystem.theme.TextMutedDark,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clickable { selectedCategory = null }
+                        )
+                    }
+                }
+            }
+        } else if (matchingCategories.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Categorias:",
+                    color = com.iptvplayer.app.core.designsystem.theme.TextMutedDark,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(matchingCategories) { cat ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(PrimaryIndigo.copy(alpha = 0.18f))
+                                .border(1.dp, PrimaryIndigo.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
+                                .clickable {
+                                    selectedCategory = cat
+                                    searchQuery = ""
+                                }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Category,
+                                    contentDescription = null,
+                                    tint = PrimaryIndigo,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Text(
+                                    text = cat,
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
             if (activePlaylistId == null) {
                 Column(
@@ -227,7 +335,7 @@ fun VodScreen(
                 ) {
                     items(
                         count = moviesPaging.itemCount,
-                        key = { index -> moviesPaging[index]?.id ?: index }
+                        key = { index -> moviesPaging[index]?.id ?: "placeholder_$index" }
                     ) { index ->
                         val movie = moviesPaging[index]
                         if (movie != null) {
@@ -325,7 +433,28 @@ fun VodScreen(
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = Color.White
                 )
-                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = categorySearchQuery,
+                    onValueChange = { categorySearchQuery = it },
+                    placeholder = { Text("Pesquisar categoria...", fontSize = 13.sp, color = com.iptvplayer.app.core.designsystem.theme.TextMutedDark) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp), tint = com.iptvplayer.app.core.designsystem.theme.TextMutedDark) },
+                    trailingIcon = {
+                        if (categorySearchQuery.isNotEmpty()) {
+                            IconButton(onClick = { categorySearchQuery = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Limpar", modifier = Modifier.size(16.dp), tint = com.iptvplayer.app.core.designsystem.theme.TextMutedDark)
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                )
+
+                val displayedCategories = if (categorySearchQuery.isBlank()) categories else categories.filter { it.contains(categorySearchQuery.trim(), ignoreCase = true) }
 
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -380,7 +509,7 @@ fun VodScreen(
                             )
                         }
                     }
-                    items(categories) { cat ->
+                    items(displayedCategories) { cat ->
                         val isSelected = selectedCategory == cat
                         Row(
                             modifier = Modifier

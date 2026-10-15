@@ -286,6 +286,23 @@
   - [x] Compilação do APK concluída com sucesso (`assembleDebug`).
 - **Resultado**: APROVADO.
 
+---
+
+### CP-19: Busca Contextual Híbrida (Nome e Categoria) & Desduplicação Determinística do Catálogo
+- **Objetivo**: Habilitar a busca de conteúdos por categoria e por nome na barra de pesquisa, fornecer carrossel de sugestões e pesquisa interna no seletor de categorias, e eliminar definitivamente todas as duplicatas de canais, filmes e séries nas listagens por categoria.
+- **Critérios de Validação**:
+  - [x] Query Room `getChannelsFilteredPaged` com busca dupla: `(name LIKE '%' || :query || '%' OR groupTitle LIKE '%' || :query || '%')`.
+  - [x] Desduplicação com `GROUP BY LOWER(TRIM(name))` e `ORDER BY name ASC, id ASC` em `ChannelDao.kt`.
+  - [x] Contagem precisa de canais únicos com `COUNT(DISTINCT LOWER(TRIM(name)))` em `getCategoriesWithCount`.
+  - [x] Carrossel de sugestões de categorias (`LazyRow`) e chip de categoria ativa com `Close` em `LiveScreen.kt`, `VodScreen.kt` e `SeriesScreen.kt`.
+  - [x] Campo de busca de categorias dentro do `CategoryBottomSheet` para navegação rápida.
+  - [x] Testes unitários 100% aprovados (`testDebugUnitTest`).
+  - [x] Compilação do APK concluída com sucesso (`assembleDebug`).
+  - [x] Instalação via ADB no dispositivo de teste com êxito (`Success`).
+- **Resultado**: APROVADO.
+
+
+
 
 
 

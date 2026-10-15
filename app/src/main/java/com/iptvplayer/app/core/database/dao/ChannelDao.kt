@@ -22,16 +22,18 @@ interface ChannelDao {
 
     /**
      * Busca paginada unificada com isolamento estrito por ContentType (LIVE, MOVIE, SERIES).
-     * Suporta filtro opcional por playlist, por categoria, busca textual e filtro de favoritos.
+     * Suporta filtro opcional por playlist, por categoria, busca textual (por nome E por categoria),
+     * filtro de favoritos e eliminação de duplicatas via GROUP BY LOWER(TRIM(name)).
      */
     @Query("""
         SELECT * FROM channels 
         WHERE (:playlistId IS NULL OR playlistId = :playlistId)
           AND contentType = :contentType
           AND (:category IS NULL OR groupTitle = :category)
-          AND (:query = '' OR name LIKE '%' || :query || '%')
+          AND (:query = '' OR name LIKE '%' || :query || '%' OR groupTitle LIKE '%' || :query || '%')
           AND (:onlyFavorites = 0 OR isFavorite = 1)
-        ORDER BY name ASC
+        GROUP BY LOWER(TRIM(name))
+        ORDER BY name ASC, id ASC
     """)
     fun getChannelsFilteredPaged(
         playlistId: Long?,
@@ -42,7 +44,7 @@ interface ChannelDao {
     ): PagingSource<Int, ChannelEntity>
 
     @Query("""
-        SELECT COUNT(*) FROM channels 
+        SELECT COUNT(DISTINCT LOWER(TRIM(name))) FROM channels 
         WHERE (:playlistId IS NULL OR playlistId = :playlistId) 
           AND contentType = :contentType
           AND isFavorite = 1
@@ -52,28 +54,29 @@ interface ChannelDao {
         contentType: ContentType
     ): Flow<Int>
 
-    @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND contentType = :contentType ORDER BY name ASC")
+    @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND contentType = :contentType GROUP BY LOWER(TRIM(name)) ORDER BY name ASC, id ASC")
     fun getChannelsPaged(playlistId: Long, contentType: ContentType): PagingSource<Int, ChannelEntity>
 
-    @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND contentType = :contentType AND groupTitle = :category ORDER BY name ASC")
+    @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND contentType = :contentType AND groupTitle = :category GROUP BY LOWER(TRIM(name)) ORDER BY name ASC, id ASC")
     fun getChannelsByCategoryPaged(
         playlistId: Long,
         contentType: ContentType,
         category: String
     ): PagingSource<Int, ChannelEntity>
 
-    @Query("SELECT * FROM channels WHERE name LIKE '%' || :query || '%' ORDER BY name ASC")
+    @Query("SELECT * FROM channels WHERE (name LIKE '%' || :query || '%' OR groupTitle LIKE '%' || :query || '%') GROUP BY LOWER(TRIM(name)) ORDER BY name ASC, id ASC")
     fun searchChannelsPaged(query: String): PagingSource<Int, ChannelEntity>
 
     /**
-     * Categorias com contagem de itens por ContentType, ordenadas pelas mais populares primeiro.
+     * Categorias com contagem de itens únicos por ContentType, ordenadas pelas mais populares primeiro.
      */
     @Query("""
-        SELECT groupTitle AS category, COUNT(*) AS count
+        SELECT groupTitle AS category, COUNT(DISTINCT LOWER(TRIM(name))) AS count
         FROM channels
         WHERE (:playlistId IS NULL OR playlistId = :playlistId)
           AND contentType = :contentType
           AND groupTitle IS NOT NULL
+          AND TRIM(groupTitle) != ''
         GROUP BY groupTitle
         ORDER BY count DESC, groupTitle ASC
     """)
@@ -87,6 +90,7 @@ interface ChannelDao {
         WHERE (:playlistId IS NULL OR playlistId = :playlistId) 
           AND contentType = :contentType 
           AND groupTitle IS NOT NULL 
+          AND TRIM(groupTitle) != ''
         ORDER BY groupTitle ASC
     """)
     fun getCategories(
@@ -95,7 +99,7 @@ interface ChannelDao {
     ): Flow<List<String>>
 
     @Query("""
-        SELECT COUNT(*) FROM channels 
+        SELECT COUNT(DISTINCT LOWER(TRIM(name))) FROM channels 
         WHERE (:playlistId IS NULL OR playlistId = :playlistId) 
           AND contentType = :contentType
     """)
@@ -109,7 +113,8 @@ interface ChannelDao {
         WHERE (:playlistId IS NULL OR playlistId = :playlistId) 
           AND contentType = :contentType 
           AND groupTitle = :groupTitle 
-        ORDER BY name ASC
+        GROUP BY LOWER(TRIM(name))
+        ORDER BY name ASC, id ASC
     """)
     suspend fun getChannelsByGroup(
         playlistId: Long?,

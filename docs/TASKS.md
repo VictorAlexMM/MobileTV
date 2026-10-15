@@ -277,6 +277,29 @@
   - Injeção de `database` e callback `onPlayOfflineItem` permitindo tocar mídias offline diretamente da tela de Configurações.
 - [x] **TASK-1406**: Validação rigorosa com testes unitários (`testDebugUnitTest` 100% aprovados) e compilação do APK (`assembleDebug` bem-sucedido).
 
+---
+
+## Fase 15 — Busca Contextual por Categoria & Eliminação Definitiva de Duplicatas no Catálogo
+
+- [x] **TASK-1501**: Expansão da query de busca em [ChannelDao.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/database/dao/ChannelDao.kt):
+  - Inclusão da cláusula `OR groupTitle LIKE '%' || :query || '%'` na query `getChannelsFilteredPaged` para buscar termos tanto no nome do canal quanto na categoria associada.
+- [x] **TASK-1502**: Eliminação de itens duplicados na listagem em [ChannelDao.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/core/database/dao/ChannelDao.kt):
+  - Inclusão de `GROUP BY LOWER(TRIM(name))` nas queries `getChannelsFilteredPaged`, `getChannelsPaged`, `getChannelsByCategoryPaged` e `searchChannelsPaged`.
+  - Desempate determinístico com `ORDER BY name ASC, id ASC` para estabilizar o `PagingSource` e erradicar duplicatas resultantes de paginação.
+  - Ajuste nas contagens de categorias em `getCategoriesWithCount` utilizando `COUNT(DISTINCT LOWER(TRIM(name)))`.
+- [x] **TASK-1503**: Experiência de busca inteligente e atalhos de categoria em [LiveScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/live/LiveScreen.kt):
+  - Atualização do placeholder para `"Buscar canais ou categorias..."`.
+  - Exibição de chip ativo com botão `Close` ao selecionar uma categoria.
+  - Carrossel horizontal de sugestões rápidas de categorias (`LazyRow`) que combinam com o termo digitado.
+  - Campo de busca interna dentro do `CategoryBottomSheet` para filtragem ágil entre centenas de categorias.
+  - Chaves estáveis no `LazyColumn` protegidas contra colisões.
+- [x] **TASK-1504**: Paridade de recursos de busca e filtros em [VodScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/vod/VodScreen.kt):
+  - Atualização de placeholder, chip de categoria ativa, carrossel de sugestões e busca de categorias no BottomSheet de Filmes.
+- [x] **TASK-1505**: Paridade de recursos de busca e filtros em [SeriesScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/series/SeriesScreen.kt):
+  - Implementação idêntica para o catálogo de Séries (chips, busca de categorias no modal e carrossel de sugestões).
+- [x] **TASK-1506**: Validação rigorosa com testes unitários (`testDebugUnitTest` 100% aprovados), compilação do APK (`assembleDebug` bem-sucedido) e instalação via ADB no dispositivo de teste (`Success`).
+
+
 
 
 

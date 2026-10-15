@@ -321,6 +321,28 @@
     - Ações em lote para pausar downloads ativos ou excluir todos os itens baixados com diálogo de confirmação.
 - **Consequências**: Transparência absoluta para o usuário sobre a localização física dos downloads no dispositivo, facilidade de cópia e acesso à pasta, e capacidade de inspecionar, reproduzir ou excluir qualquer mídia baixada a partir do painel de Configurações.
 
+---
+
+### ADR-022: Busca Híbrida Nome/Categoria e Desduplicação Determinística no SQLite Room
+- **Data**: 2026-10-15
+- **Status**: Aceito
+- **Contexto**: O usuário apontou dois problemas na navegação:
+  1. A ferramenta de busca operava de forma genérica apenas contra o nome do canal (`name LIKE %query%`), não encontrando conteúdos quando o usuário digitava termos de categorias (ex: "esportes", "filmes", "desenhos").
+  2. Ao navegar por categorias, a listagem exibia múltiplos itens duplicados, causados por entradas redundantes em playlists IPTV (múltiplos streams para o mesmo canal) e falta de ordenação determinística de desempate no `PagingSource` do Room.
+- **Decisão**:
+  - **Busca por Categoria e Nome (`ChannelDao.kt`)**:
+    - Estendida a condição SQL em `getChannelsFilteredPaged`: `(name LIKE '%' || :query || '%' OR groupTitle LIKE '%' || :query || '%')`.
+    - Ao digitar termos relacionados a uma categoria, todos os canais pertencentes a ela são retornados, além de correspondências diretas no nome.
+    - Integrado carrossel horizontal de sugestões imediatas de categorias (`LazyRow`) no topo de `LiveScreen`, `VodScreen` e `SeriesScreen`, permitindo filtrar a categoria com 1 toque.
+    - Implementado chip de categoria ativa com botão `Close` para remoção rápida do filtro.
+    - Adicionado campo de pesquisa de categorias em tempo real dentro do `CategoryBottomSheet`.
+  - **Desduplicação Estrita no SQLite**:
+    - Aplicado `GROUP BY LOWER(TRIM(name))` nas queries `getChannelsFilteredPaged`, `getChannelsPaged`, `getChannelsByCategoryPaged` e `searchChannelsPaged`.
+    - Adicionado desempate determinístico `ORDER BY name ASC, id ASC` para garantir que o offset de paginação (`PagingSource`) não repita itens em transições de página.
+    - Atualizada a query `getCategoriesWithCount` com `COUNT(DISTINCT LOWER(TRIM(name)))` para refletir a contagem real e precisa de canais únicos por categoria.
+- **Consequências**: A busca agora encontra conteúdos tanto pelo nome quanto pela categoria digitada, a seleção de categorias conta com chips e busca interna dedicada, e as listagens de canais, filmes e séries são 100% livres de itens repetidos.
+
+
 
 
 
