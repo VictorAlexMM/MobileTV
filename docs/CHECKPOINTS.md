@@ -360,12 +360,13 @@
   - [x] Remoção do card cinza gigante de estado vazio com ícone de 48dp da tela inicial.
   - [x] Seção "Continuar Assistindo" ocultada com inteligência quando não houver reproduções em andamento.
   - [x] Novo componente `MinimalContinueWatchingCard` com altura compacta (~66dp), miniatura 16:9, barra vermelha do YouTube e layout horizontal limpo.
-  - [x] Opção "Continuar" preservada tanto no botão de play circular em destaque quanto ao tocar no próprio card (`startPositionMs = item.positionMs`).
-  - [x] Opção "Reiniciar" preservada no botão circular `Replay` (`startPositionMs = 0L`).
-  - [x] Opção "Apagar" preservada no botão circular `Close` (`watchProgressDao.deleteProgress`).
+  - [x] Opção "Continuar" disparada diretamente ao tocar no card (`startPositionMs = item.positionMs`), com remoção do botão de play redundante para otimizar o espaço.
+  - [x] Opção "Reiniciar" preservada no botão circular `Replay` de 32dp (`startPositionMs = 0L`).
+  - [x] Opção "Apagar" preservada no botão circular `Close` de 32dp (`watchProgressDao.deleteProgress`).
   - [x] Banner de boas-vindas modernizado com dimensões balanceadas e visual clean.
   - [x] Testes unitários 100% aprovados (`BUILD SUCCESSFUL`).
   - [x] Compilação do APK de depuração realizada com sucesso (`assembleDebug`).
+  - [x] Instalação validada via ADB no Samsung Galaxy S23 Ultra (`RQCW1067EEB` - `Success`) com verificação visual perfeita via captura de tela.
 - **Resultado**: APROVADO.
 
 

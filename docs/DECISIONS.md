@@ -427,13 +427,13 @@
     - Miniatura 16:9 compacta (82dp x 48dp) com overlay escuro, ícone play translúcido e a barra vermelha do YouTube (`YouTubeProgressBar`) no rodapé.
     - Tipografia em hierarquia clara: Título em destaque, subtítulo com a categoria/episódio e tempo decorrido/restante com cor de destaque.
     - Exibição vertical direta dos itens mais recentes (`take(3)`), sem quebras laterais de scroll.
-  - **Preservação Integral das 3 Ações Principais**:
-    1. **Continuar**: Botão circular de destaque em `PrimaryIndigo` com `Icons.Default.PlayArrow`, iniciando o player com `startPositionMs = item.positionMs`. O toque no próprio corpo do card também dispara a retomada no ponto exato.
-    2. **Reiniciar**: Botão circular compacto com `Icons.Default.Replay` (`onRestartClick`), iniciando a reprodução a partir de `0L`.
-    3. **Apagar**: Botão circular compacto com `Icons.Default.Close` (`onRemoveClick`), executando `database.watchProgressDao().deleteProgress(item.contentId)` e removendo o item do histórico com feedback instantâneo via Snackbar.
+  - **Ações Otimizadas e Remoção do Play Redundante**:
+    1. **Continuar**: Toque direto em qualquer ponto do card dispara a reprodução no ponto exato (`startPositionMs = item.positionMs`). A remoção do botão de play explícito na direita eliminou a sobrecarga horizontal.
+    2. **Reiniciar**: Botão circular de 32dp com `Icons.Default.Replay` (`onRestartClick`), iniciando a reprodução a partir de `0L`.
+    3. **Apagar**: Botão circular de 32dp com `Icons.Default.Close` (`onRemoveClick`), executando `database.watchProgressDao().deleteProgress(item.contentId)` e removendo o item do histórico com feedback instantâneo via Snackbar.
   - **Banner Superior Clean**:
     - Redução de padding do banner de boas-vindas para um visual mais sutil, integrado e de alto padrão visual.
-- **Consequências**: A tela inicial fica limpa, moderna e ergonômica. O usuário retoma seus vídeos com extrema facilidade em um único toque, pode reiniciar ou apagar rapidamente sem telas intermediárias, e o layout respira com muito mais harmonia.
+- **Consequências**: A tela inicial fica limpa, moderna e ergonômica. O espaçamento não quebra, o texto ganha amplitude legível, e o usuário mantém total controle para continuar (com um toque no card), reiniciar ou apagar.
 
 
 

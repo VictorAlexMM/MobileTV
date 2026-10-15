@@ -380,6 +380,10 @@
 - [x] **TASK-1904**: Modernização do banner de boas-vindas:
   - Redução de padding excessivo e harmonização das cores para um estilo minimalista e integrado com o tema escuro.
 - [x] **TASK-1905**: Validação com testes unitários (`testDebugUnitTest` 100% aprovados) e compilação do APK de depuração (`assembleDebug` concluído com sucesso).
+- [x] **TASK-1906**: Ajuste fino de espaçamento dos botões em [HomeScreen.kt](file:///c:/Users/victor.mota/Desktop/New/app/app/src/main/java/com/iptvplayer/app/feature/home/HomeScreen.kt):
+  - Remoção do botão de play redundante na lateral direita do card, pois o toque em qualquer área do card já dispara a retomada da reprodução.
+  - Redesenho dos botões de Reiniciar (`Replay`) e Apagar (`Close`) utilizando containers circulares de 32dp sem padding fantasma de 48dp, liberando espaço amplo para título, categoria e tempo restante.
+  - Verificação e aprovação visual direta no Samsung Galaxy S23 Ultra via captura de tela ADB.
 
 
 

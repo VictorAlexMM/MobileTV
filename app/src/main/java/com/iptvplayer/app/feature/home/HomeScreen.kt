@@ -773,7 +773,7 @@ private fun MinimalContinueWatchingCard(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 6.dp),
+                    .padding(horizontal = 8.dp),
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
@@ -786,7 +786,7 @@ private fun MinimalContinueWatchingCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -819,56 +819,43 @@ private fun MinimalContinueWatchingCard(
                 }
             }
 
-            // 3. Botões de Ação Direta (Continuar, Reiniciar, Apagar)
+            // 3. Botões de Ação: Reiniciar do começo e Apagar do histórico
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(start = 4.dp, end = 2.dp)
             ) {
-                // Play / Continuar
-                IconButton(
-                    onClick = onResumeClick,
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(PrimaryIndigo)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Continuar de onde parou",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
                 // Reiniciar do começo
-                IconButton(
-                    onClick = onRestartClick,
+                Box(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
-                        .background(DarkSurfaceVariant.copy(alpha = 0.7f))
+                        .background(DarkSurfaceVariant)
+                        .clickable { onRestartClick() },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Replay,
                         contentDescription = "Reiniciar do começo",
                         tint = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(15.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
 
                 // Apagar do histórico
-                IconButton(
-                    onClick = onRemoveClick,
+                Box(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
-                        .background(DarkSurfaceVariant.copy(alpha = 0.7f))
+                        .background(DarkSurfaceVariant)
+                        .clickable { onRemoveClick() },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Apagar do histórico",
                         tint = TextMutedDark,
-                        modifier = Modifier.size(15.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
